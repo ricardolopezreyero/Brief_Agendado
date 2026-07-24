@@ -1,0 +1,21 @@
+name = "brief-agendado"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+account_id = "93695b987a7460c681c06ca4df901ef4"
+
+# Sin dominio propio: solo necesita cron + un par de endpoints de diagnóstico,
+# accesibles vía el subdominio workers.dev por defecto.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rayosx"
+database_id = "ec23450b-2333-43f0-a7e0-17970e649c85"
+
+# La cuenta de Cloudflare tiene un tope de 5 cron triggers en total (todos los
+# Workers combinados), así que este Worker usa un solo cron cada 15 min que
+# hace ambas cosas: revisa el calendario por citas nuevas y revisa si hay
+# briefs listos para enviar a las 9am hora CDMX.
+[triggers]
+crons = ["*/15 * * * *"]

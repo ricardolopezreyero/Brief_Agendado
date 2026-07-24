@@ -1,0 +1,137 @@
+// RLR
+import type { Env, EventoRecord, FuenteCalendario } from './types';
+import { fetchCalendario } from './ics';
+import { extraerProspecto } from './extract';
+import { ejecutarResearch } from './research';
+import { enviarBrief } from './email';
+import {
+  insertLog, eventoExiste, eventoConResearchFallido, insertEventoBase, guardarProspecto, guardarDossier,
+  marcarErrorResearch, marcarEnviado, marcarErrorEnvio, eventosParaEnviarHoy,
+  listColaboradoresActivos,
+} from './db';
+
+const HORIZONTE_DIAS = 60; // ignora eventos a más de 60 días, evita procesar un calendario histórico enorme en el primer poll
+const PALABRA_CLAVE = 'rayos x'; // solo eventos cuyo título contenga esto activan la investigación
+// Cada research consume ~7 subrequests (extracción + queries a Brave + redacción). El plan
+// gratuito de Cloudflare limita 50 subrequests por invocación, así que se topa cuántos
+// eventos se investigan por corrida del cron — el resto queda pendiente para la siguiente
+// (cada 15 min), no se pierde nada.
+const MAX_RESEARCH_POR_CORRIDA = 5;
+
+async function fuentesDeCalendario(env: Env): Promise<FuenteCalendario[]> {
+  const fuentes: FuenteCalendario[] = [
+    { colaboradorId: null, nombre: 'Ricardo López Reyero', correo: 'Ricardo@SuperLeads.mx', icsUrl: env.CALENDAR_ICS_URL },
+  ];
+  const colaboradores = await listColaboradoresActivos(env.DB);
+  for (const c of colaboradores) {
+    fuentes.push({ colaboradorId: c.id, nombre: c.nombre, correo: c.correo, icsUrl: c.ics_url });
+  }
+  return fuentes;
+}
+
+async function investigarEvento(env: Env, uid: string, summary: string, descripcion: string): Promise<void> {
+  const prospecto = await extraerProspecto(env.DEEPSEEK_API_KEY, summary, descripcion);
+  await guardarProspecto(env.DB, uid, prospecto);
+
+  const dossier = await ejecutarResearch(env.DEEPSEEK_API_KEY, env.BRAVE_API_KEY, prospecto);
+  await guardarDossier(env.DB, uid, dossier);
+}
+
+export async function pollCalendario(env: Env): Promise<void> {
+  const ahora = Date.now();
+  const limite = ahora + HORIZONTE_DIAS * 24 * 60 * 60 * 1000;
+  const fuentes = await fuentesDeCalendario(env);
+  let investigadosEnEstaCorrida = 0;
+
+  for (const fuente of fuentes) {
+    if (investigadosEnEstaCorrida >= MAX_RESEARCH_POR_CORRIDA) break;
+    let eventos;
+    try {
+      eventos = await fetchCalendario(fuente.icsUrl);
+    } catch (e: any) {
+      await insertLog(env.DB, 'ERROR', `No se pudo leer el calendario de ${fuente.nombre}: ${e?.message ?? e}`);
+      continue;
+    }
+
+    const relevantes = eventos.filter(ev => {
+      const t = new Date(ev.startUtc).getTime();
+      const enRango = Number.isFinite(t) && t >= ahora && t <= limite;
+      const tieneClave = ev.summary.toLowerCase().includes(PALABRA_CLAVE);
+      return enRango && tieneClave;
+    });
+
+    for (const ev of relevantes) {
+      if (investigadosEnEstaCorrida >= MAX_RESEARCH_POR_CORRIDA) break;
+
+      const existe = await eventoExiste(env.DB, ev.uid);
+      const reintentar = existe && await eventoConResearchFallido(env.DB, ev.uid);
+      if (existe && !reintentar) continue;
+      investigadosEnEstaCorrida++;
+
+      if (!existe) {
+        await insertEventoBase(env.DB, ev, { email: fuente.correo, nombre: fuente.nombre, colaboradorId: fuente.colaboradorId });
+        await insertLog(env.DB, 'INFO', `▶ Nueva cita Rayos X detectada (${fuente.nombre}): ${ev.summary}`, ev.uid);
+      } else {
+        await insertLog(env.DB, 'INFO', `↻ Reintentando research que había fallado`, ev.uid);
+      }
+
+      try {
+        await investigarEvento(env, ev.uid, ev.summary, ev.descriptionRaw);
+        await insertLog(env.DB, 'INFO', `✓ Dossier listo`, ev.uid);
+      } catch (e: any) {
+        const error = e?.message ?? String(e);
+        await marcarErrorResearch(env.DB, ev.uid, error);
+        await insertLog(env.DB, 'ERROR', `✗ Falló research: ${error}`, ev.uid);
+      }
+    }
+  }
+}
+
+function rangoHoyCDMX(): { inicioUtc: string; finUtc: string; horaCDMX: number } {
+  const ahora = new Date();
+  const cdmx = new Date(ahora.getTime() - 6 * 60 * 60 * 1000);
+  const y = cdmx.getUTCFullYear();
+  const m = cdmx.getUTCMonth();
+  const d = cdmx.getUTCDate();
+  // Medianoche CDMX == 06:00 UTC (offset fijo -6)
+  const inicioUtc = new Date(Date.UTC(y, m, d, 6, 0, 0)).toISOString();
+  const finUtc = new Date(Date.UTC(y, m, d + 1, 6, 0, 0)).toISOString();
+  return { inicioUtc, finUtc, horaCDMX: cdmx.getUTCHours() };
+}
+
+async function asegurarResearch(env: Env, evento: EventoRecord): Promise<EventoRecord> {
+  if (evento.research_status !== 'pendiente') return evento;
+  // Cae aquí solo si la cita apareció después del último poll (p.ej. agendada
+  // el mismo día) y todavía no tiene research — se corre aquí como respaldo
+  // para no mandar el correo del día sin dossier si se puede evitar.
+  try {
+    await investigarEvento(env, evento.uid, evento.summary, evento.raw_description);
+    await insertLog(env.DB, 'INFO', '✓ Dossier generado como respaldo antes del envío', evento.uid);
+  } catch (e: any) {
+    const error = e?.message ?? String(e);
+    await marcarErrorResearch(env.DB, evento.uid, error);
+    await insertLog(env.DB, 'ERROR', `✗ Falló research de respaldo: ${error}`, evento.uid);
+  }
+  const actualizado = await env.DB.prepare('SELECT * FROM eventos_rayosx WHERE uid = ?').bind(evento.uid).first<EventoRecord>();
+  return actualizado ?? evento;
+}
+
+export async function enviarBriefsDelDia(env: Env): Promise<void> {
+  const { inicioUtc, finUtc, horaCDMX } = rangoHoyCDMX();
+  if (horaCDMX < 9) return; // aún no son las 9am CDMX, no hay nada que enviar todavía
+
+  const eventos = await eventosParaEnviarHoy(env.DB, inicioUtc, finUtc);
+
+  for (let evento of eventos) {
+    evento = await asegurarResearch(env, evento);
+
+    const resultado = await enviarBrief(env, evento);
+    if (resultado.ok) {
+      await marcarEnviado(env.DB, evento.uid);
+      await insertLog(env.DB, 'INFO', `✓ Brief enviado`, evento.uid);
+    } else {
+      await marcarErrorEnvio(env.DB, evento.uid, resultado.error ?? 'error desconocido');
+      await insertLog(env.DB, 'ERROR', `✗ Falló envío del brief: ${resultado.error}`, evento.uid);
+    }
+  }
+}
