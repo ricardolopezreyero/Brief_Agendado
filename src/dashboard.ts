@@ -1,45 +1,50 @@
 // RLR
+import { headAbiertoHtml, heroHeader, ESTILOS_SUPERLEADS } from './branding';
+
 export function paginaDashboard(): string {
   return `<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Brief Agendado — Dashboard</title>
-  <style>
-    :root{color-scheme:light;}
-    body{margin:0;background:#f4f5f7;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#2b3646;}
-    header{background:#1a2b4c;color:#fff;padding:20px 28px;}
-    header h1{margin:0;font-size:18px;}
-    header p{margin:4px 0 0;font-size:13px;color:#b7c0d8;}
-    .wrap{max-width:1200px;margin:24px auto;padding:0 20px;}
-    .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
-    .toolbar input{padding:8px 12px;border:1px solid #dde1e7;border-radius:8px;font-size:13px;min-width:220px;}
-    .toolbar a.btn{padding:8px 14px;border-radius:8px;background:#3457d5;color:#fff;text-decoration:none;font-size:13px;font-weight:600;}
-    .card{background:#fff;border-radius:12px;overflow:auto;}
-    table{width:100%;border-collapse:collapse;font-size:13px;}
-    th{text-align:left;padding:10px 12px;background:#f8f9fb;color:#5b6472;font-weight:600;border-bottom:1px solid #eef0f3;white-space:nowrap;}
-    td{padding:10px 12px;border-bottom:1px solid #f2f3f5;vertical-align:top;}
-    tr:hover td{background:#fafbfd;}
-    .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;}
-    .pill.ok{background:#e6f4ea;color:#1e7e34;}
-    .pill.pend{background:#fff4e0;color:#a86400;}
-    .pill.err{background:#fdecea;color:#c0392b;}
-    .dl{color:#3457d5;text-decoration:none;font-weight:600;margin-right:10px;}
-    .dl.disabled{color:#c3c8d1;pointer-events:none;}
-    .acciones{white-space:nowrap;}
-    .btn-enviar{border:none;background:none;color:#3457d5;font-weight:600;font-size:13px;cursor:pointer;padding:0;font-family:inherit;}
-    .btn-enviar:disabled{color:#c3c8d1;cursor:default;}
-    .btn-enviar.enviado{color:#1e7e34;}
-    .muted{color:#9aa2b1;font-size:12px;}
-    #empty{padding:40px;text-align:center;color:#9aa2b1;}
-  </style>
+${headAbiertoHtml('Brief Agendado — Dashboard')}
+<style>
+  ${ESTILOS_SUPERLEADS}
+
+  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .toolbar input{padding:10px 14px;border:.5px solid var(--border);border-radius:8px;font-size:13.5px;font-family:inherit;min-width:260px;background:#fff;}
+  .toolbar input:focus{outline:none;border-color:var(--blue);}
+  .toolbar a.btn{padding:10px 16px;border-radius:8px;background:var(--navy);color:#fff;text-decoration:none;font-size:13px;font-weight:700;}
+  .toolbar a.btn:hover{background:var(--navy-mid);}
+
+  .card{background:#fff;border:.5px solid var(--border);border-radius:12px;overflow:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;padding:12px 14px;background:var(--blue-softer);color:var(--navy);font-weight:700;border-bottom:.5px solid var(--border);white-space:nowrap;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
+  td{padding:12px 14px;border-bottom:.5px solid var(--border);vertical-align:top;color:#2b3646;}
+  tr:hover td{background:var(--blue-soft);}
+
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;}
+  .pill.ok{background:rgba(86,239,159,.15);color:var(--green-d);}
+  .pill.pend{background:#fff4e0;color:#a86400;}
+  .pill.err{background:#fdecea;color:#c0392b;}
+
+  .dl{color:var(--blue);text-decoration:none;font-weight:700;margin-right:10px;}
+  .dl:hover{text-decoration:underline;}
+  .dl.disabled{color:#c3c8d1;pointer-events:none;}
+  .acciones{white-space:nowrap;}
+  .btn-enviar{border:none;background:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;padding:0;font-family:inherit;}
+  .btn-enviar:hover{text-decoration:underline;}
+  .btn-enviar:disabled{color:#c3c8d1;cursor:default;}
+  .btn-enviar.enviado{color:var(--green-d);}
+  .muted{color:var(--dim);font-size:12px;}
+  #empty{padding:48px;text-align:center;color:var(--dim);font-size:13.5px;}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Brief Agendado — Dashboard</h1>
-    <p>Histórico de citas Rayos X: research, destinatario y estado de envío. <a href="/conectar" style="color:#fff;">Conectar mi calendario →</a></p>
-  </header>
-  <div class="wrap">
+  ${heroHeader({
+    eyebrow: 'Brief Agendado',
+    titulo: 'Dashboard',
+    subtitulo: 'Histórico de citas Rayos X: research, destinatario y estado de envío. <a href="/conectar">Conectar mi calendario →</a>',
+    ancho: true,
+  })}
+  <div class="wrap ancho">
     <div class="toolbar">
       <input id="buscar" type="text" placeholder="Buscar por institución, representante o correo...">
       <a class="btn" href="/eventos?limit=500" target="_blank">Ver JSON crudo</a>
@@ -85,6 +90,10 @@ export function paginaDashboard(): string {
       pintar(eventos);
     }
 
+    // Nota: las filas se arman con appendChild/addEventListener (no con
+    // onclick="fn(this,'...')" embebido en el HTML) a propósito — el
+    // minificador de JS de Cloudflare en el dominio custom llega a corromper
+    // comillas escapadas dentro de <script>, lo que rompía todo el bloque.
     function pintar(eventos) {
       const cuerpo = document.getElementById('cuerpo');
       const empty = document.getElementById('empty');
@@ -94,16 +103,7 @@ export function paginaDashboard(): string {
       for (const ev of eventos) {
         const tr = document.createElement('tr');
         const uidEnc = encodeURIComponent(ev.uid);
-        let resumen;
-        if (ev.dossier_md) {
-          resumen = '<a class="dl" href="/eventos/' + uidEnc + '/ver" target="_blank">Ver</a><a class="dl" href="/eventos/' + uidEnc + '/dossier">Descargar .md</a>';
-        } else if (ev.research_status === 'manual' || ev.research_status === 'error') {
-          resumen = '<button class="btn-enviar" onclick="generarBrief(this, \'' + ev.uid.replace(/'/g, "\\'") + '\')">Generar brief</button>';
-        } else {
-          resumen = '<span class="dl disabled">—</span>';
-        }
-        const textoBoton = ev.email_status === 'enviado' ? 'Reenviar correo' : 'Mandar correo';
-        const claseBoton = ev.email_status === 'enviado' ? 'btn-enviar enviado' : 'btn-enviar';
+
         tr.innerHTML =
           '<td>' + fechaCDMX(ev.start_utc) + '</td>' +
           '<td>' + (ev.institucion || ev.summary || '—') + '</td>' +
@@ -111,9 +111,35 @@ export function paginaDashboard(): string {
           '<td>' + (ev.destinatario_nombre || '—') + '<div class="muted">' + (ev.destinatario_email || '') + '</div></td>' +
           '<td>' + pill(ev.research_status, RESEARCH) + '</td>' +
           '<td>' + pill(ev.email_status, ENVIO) + '</td>' +
-          '<td>' + fechaCDMX(ev.enviado_en) + '</td>' +
-          '<td>' + resumen + '</td>' +
-          '<td class="acciones"><button class="' + claseBoton + '" onclick="mandarCorreo(this, \'' + ev.uid.replace(/'/g, "\\'") + '\')">' + textoBoton + '</button></td>';
+          '<td>' + fechaCDMX(ev.enviado_en) + '</td>';
+
+        const tdResumen = document.createElement('td');
+        if (ev.dossier_md) {
+          const verA = document.createElement('a');
+          verA.className = 'dl'; verA.target = '_blank'; verA.href = '/eventos/' + uidEnc + '/ver'; verA.textContent = 'Ver';
+          const dlA = document.createElement('a');
+          dlA.className = 'dl'; dlA.href = '/eventos/' + uidEnc + '/dossier'; dlA.textContent = 'Descargar .md';
+          tdResumen.append(verA, dlA);
+        } else if (ev.research_status === 'manual' || ev.research_status === 'error') {
+          const btn = document.createElement('button');
+          btn.className = 'btn-enviar';
+          btn.textContent = 'Generar brief';
+          btn.addEventListener('click', () => generarBrief(btn, ev.uid));
+          tdResumen.appendChild(btn);
+        } else {
+          tdResumen.innerHTML = '<span class="dl disabled">—</span>';
+        }
+        tr.appendChild(tdResumen);
+
+        const tdAcciones = document.createElement('td');
+        tdAcciones.className = 'acciones';
+        const btnEnviar = document.createElement('button');
+        btnEnviar.className = ev.email_status === 'enviado' ? 'btn-enviar enviado' : 'btn-enviar';
+        btnEnviar.textContent = ev.email_status === 'enviado' ? 'Reenviar correo' : 'Mandar correo';
+        btnEnviar.addEventListener('click', () => mandarCorreo(btnEnviar, ev.uid));
+        tdAcciones.appendChild(btnEnviar);
+        tr.appendChild(tdAcciones);
+
         cuerpo.appendChild(tr);
       }
     }

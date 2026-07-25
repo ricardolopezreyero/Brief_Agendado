@@ -1,44 +1,11 @@
 // RLR
 import type { EventoRecord } from './types';
-import { escapeHtml, fechaLegibleCDMX, LOGO_SUPERLEADS } from './markdown';
+import { escapeHtml, fechaLegibleCDMX } from './markdown';
+import { ESTILOS_SUPERLEADS, headAbiertoHtml, heroHeader } from './branding';
 
 interface Mensaje {
   tipo: 'ok' | 'error';
   texto: string;
-}
-
-const LOGO_URL = LOGO_SUPERLEADS;
-
-const ESTILOS_COMPARTIDOS = `
-  :root{
-    --green:#56EF9F; --green-d:#2BC878;
-    --navy-deep:#001240; --navy-mid:#001a5e; --navy:#002582;
-    --blue:#0039C8; --blue-soft:#F4F7FF; --blue-softer:#EEF2FF;
-    --border:#e0e8f8; --muted:#666; --dim:#aaa;
-    --ease: cubic-bezier(.16,1,.3,1);
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--blue-soft);font-family:"Plus Jakarta Sans",-apple-system,Segoe UI,Roboto,sans-serif;color:#1a1a1a;}
-  header{background:var(--navy-deep);padding:28px 24px;position:relative;overflow:hidden;}
-  header::before{content:"";position:absolute;right:-100px;top:-100px;width:320px;height:320px;border-radius:50%;background:rgba(86,239,159,.05);}
-  .brand{display:flex;align-items:center;gap:10px;position:relative;}
-  .brand img{width:150px;display:block;}
-  .hero-text{max-width:640px;margin:22px auto 0;position:relative;text-align:center;}
-  .hero-text .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:20px;background:rgba(86,239,159,.1);color:var(--green);border:.5px solid rgba(86,239,159,.25);margin-bottom:14px;}
-  .hero-text h1{margin:0 0 10px;font-size:26px;font-weight:800;letter-spacing:-.6px;color:#fff;}
-  .hero-text p{margin:0;font-size:14px;line-height:1.65;color:#7a9fd4;}
-  .hero-text p strong{color:var(--green);font-weight:700;}
-  .wrap{max-width:640px;margin:0 auto;padding:36px 20px 60px;}
-`;
-
-// Deja el <head> abierto a propósito: cada página agrega su <style> propio y
-// cierra con </head><body> antes de continuar.
-function headAbiertoHtml(titulo: string): string {
-  return `<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escapeHtml(titulo)}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&display=swap" rel="stylesheet">`;
 }
 
 function avisoHtml(mensaje?: Mensaje): string {
@@ -52,7 +19,7 @@ export function paginaConectar(mensaje?: Mensaje): string {
 <html lang="es">
 ${headAbiertoHtml('Conectar calendario — Brief Agendado')}
 <style>
-  ${ESTILOS_COMPARTIDOS}
+  ${ESTILOS_SUPERLEADS}
 
   .clave{background:var(--navy-deep);border-radius:12px;padding:18px 20px;margin-bottom:24px;display:flex;gap:12px;align-items:flex-start;}
   .clave .icono{flex:none;font-size:18px;}
@@ -108,14 +75,12 @@ ${headAbiertoHtml('Conectar calendario — Brief Agendado')}
 </style>
 </head>
 <body>
-  <header>
-    <div class="brand"><img src="${LOGO_URL}" alt="SuperLeads"></div>
-    <div class="hero-text">
-      <div class="eyebrow"><span>●</span> BRIEF AGENDADO</div>
-      <h1>Conecta tu calendario</h1>
-      <p>Solo para comerciales SuperLeads. Cualquier cita cuyo título contenga <strong>"Rayos X"</strong> dispara una investigación automática del prospecto — te llega un brief por correo el día de la reunión, a las 9am.</p>
-    </div>
-  </header>
+  ${heroHeader({
+    eyebrow: 'Brief Agendado',
+    titulo: 'Conecta tu calendario',
+    subtitulo: 'Solo para comerciales SuperLeads. Cualquier cita cuyo título contenga <strong>"Rayos X"</strong> dispara una investigación automática del prospecto — te llega un brief por correo el día de la reunión, a las 9am.',
+    volverHref: '/',
+  })}
 
   <div class="wrap">
     ${avisoHtml(mensaje)}
@@ -202,7 +167,7 @@ export function paginaConectado(nombre: string, eventosBacklog: EventoRecord[]):
         <div class="bi-titulo">${escapeHtml(ev.institucion || ev.summary)}</div>
         <div class="bi-fecha">${fechaLegibleCDMX(ev.start_utc)}</div>
       </div>
-      <button class="btn-generar" onclick="generarBrief(this, '${ev.uid.replace(/'/g, "\\'")}')">Generar brief</button>
+      <button class="btn-generar">Generar brief</button>
     </div>`).join('\n');
 
   const backlogHtml = eventosBacklog.length ? `
@@ -219,7 +184,7 @@ export function paginaConectado(nombre: string, eventosBacklog: EventoRecord[]):
 <html lang="es">
 ${headAbiertoHtml('Calendario conectado — Brief Agendado')}
 <style>
-  ${ESTILOS_COMPARTIDOS}
+  ${ESTILOS_SUPERLEADS}
   .pasos{background:#fff;border:.5px solid var(--border);border-radius:12px;padding:28px 26px;margin-bottom:20px;}
   .pasos h2{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--navy);}
   .pasos .sub{margin:0 0 20px;font-size:12.5px;color:var(--muted);line-height:1.6;}
@@ -236,20 +201,27 @@ ${headAbiertoHtml('Calendario conectado — Brief Agendado')}
 </style>
 </head>
 <body>
-  <header>
-    <div class="brand"><img src="${LOGO_URL}" alt="SuperLeads"></div>
-    <div class="hero-text">
-      <div class="eyebrow"><span>●</span> BRIEF AGENDADO</div>
-      <h1>¡Listo, ${escapeHtml(nombre.split(' ')[0])}!</h1>
-      <p>Tu calendario ya está conectado. Cualquier cita nueva con <strong>"Rayos X"</strong> en el título se investigará sola y te llegará el brief el día de la reunión, a las 9am.</p>
-    </div>
-  </header>
+  ${heroHeader({
+    eyebrow: 'Brief Agendado',
+    titulo: `¡Listo, ${escapeHtml(nombre.split(' ')[0])}!`,
+    subtitulo: 'Tu calendario ya está conectado. Cualquier cita nueva con <strong>"Rayos X"</strong> en el título se investigará sola y te llegará el brief el día de la reunión, a las 9am.',
+    volverHref: '/',
+  })}
   <div class="wrap">
     <div class="aviso-ok">✓ Calendario conectado correctamente.</div>
     ${backlogHtml}
     <a class="volver" href="/">← Ir al dashboard</a>
   </div>
   <script>
+    // Los botones se conectan con addEventListener leyendo data-uid (no con
+    // onclick="fn(this,'...')" embebido) — el minificador de JS de Cloudflare
+    // en el dominio custom llega a corromper comillas escapadas en <script>.
+    document.querySelectorAll('.backlog-item').forEach(item => {
+      const uid = item.dataset.uid;
+      const btn = item.querySelector('.btn-generar');
+      if (btn) btn.addEventListener('click', () => generarBrief(btn, uid));
+    });
+
     async function generarBrief(btn, uid) {
       btn.disabled = true;
       const original = btn.textContent;

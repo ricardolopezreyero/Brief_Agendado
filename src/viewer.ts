@@ -81,7 +81,7 @@ export function paginaVerDossier(evento: EventoRecord): string {
       <div id="dossierBody">${cuerpo}</div>
 
       <div class="acciones">
-        <button class="btn primary" onclick="mandarCorreo(this)">Mandar correo con este resumen</button>
+        <button class="btn primary" id="btnEnviar" data-correo="${escapeHtml(evento.destinatario_email || '')}" onclick="mandarCorreo(this)">Mandar correo con este resumen</button>
         <button class="btn pdf" id="btnPdf" onclick="generarPDF(this)">Descargar PDF</button>
         <a class="btn secondary" href="/eventos/${encodeURIComponent(evento.uid)}/dossier">Descargar .md</a>
       </div>
@@ -111,7 +111,7 @@ export function paginaVerDossier(evento: EventoRecord): string {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     async function mandarCorreo(btn) {
-      if (!confirm('¿Mandar el brief de esta cita ahora mismo a ${escapeHtml((evento.destinatario_email || '').replace(/'/g, "\\'"))}?')) return;
+      if (!confirm('¿Mandar el brief de esta cita ahora mismo a ' + (btn.dataset.correo || '') + '?')) return;
       btn.disabled = true;
       btn.textContent = 'Enviando...';
       const estado = document.getElementById('estadoEnvio');

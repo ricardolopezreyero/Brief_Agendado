@@ -75,7 +75,9 @@ El calendario de Ricardo sigue siendo el original: vive en el secret
 ## Dashboard
 
 `GET /` — histórico completo: institución, representante, a quién se le
-mandó, estado de research/envío y hora de envío, con búsqueda. Por cada fila:
+mandó, estado de research/envío y hora de envío, con búsqueda. Con marca
+SuperLeads (logo, header navy, tipografía Plus Jakarta Sans — `src/branding.ts`,
+compartido con `/conectar` y `/eventos/:uid/ver`). Por cada fila:
 
 - **Ver** — abre `/eventos/:uid/ver`, una página con el dossier completo
   renderizado (no solo el .md crudo) más botones para mandar el correo o
@@ -187,9 +189,23 @@ src/
   db.ts            D1: eventos_rayosx, colaboradores, logs
   scheduled.ts      Orquesta poll de calendarios y envío del día
   markdown.ts       Render compartido de markdown→HTML (dossier) + fecha CDMX
+  branding.ts        Header/CSS con marca SuperLeads, compartido por dashboard/conectar
   dashboard.ts      HTML del dashboard (/)
-  viewer.ts         HTML de /eventos/:uid/ver (dossier + botón de envío)
+  viewer.ts         HTML de /eventos/:uid/ver (dossier + botón de envío + PDF)
   conectar.ts        HTML de /conectar (marca SuperLeads, pasos + backlog manual)
   index.ts          Router HTTP + cron
+
+## Nota sobre el dominio custom y JS inline
+
+`brief.superleads.mx` corre dentro de la misma zona de Cloudflare que el
+resto de superleads.mx, así que las optimizaciones de la zona (Auto Minify
+de JS, entre otras) se aplican a la respuesta del Worker — cosa que NO pasa
+en el subdominio `*.workers.dev`. Ese minificador puede corromper comillas
+escapadas dentro de un `<script>` inline (p.ej. `onclick="fn(this, '${uid
+.replace(/'/g,"\\'")}')"`) y tumbar el bloque de script completo en
+silencio. Por eso en `dashboard.ts` y `conectar.ts` los botones de las filas
+se conectan con `addEventListener` leyendo `data-*`/closures en vez de
+`onclick="fn(this,'...')"` con valores escapados a mano — evita el problema
+de raíz en lugar de depender de que el minificador no lo rompa.
 migrations/         Esquema D1
 ```
