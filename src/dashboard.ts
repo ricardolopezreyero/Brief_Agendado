@@ -11,8 +11,6 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
   .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
   .toolbar input{padding:10px 14px;border:.5px solid var(--border);border-radius:8px;font-size:13.5px;font-family:inherit;min-width:260px;background:#fff;}
   .toolbar input:focus{outline:none;border-color:var(--blue);}
-  .toolbar a.btn{padding:10px 16px;border-radius:8px;background:var(--navy);color:#fff;text-decoration:none;font-size:13px;font-weight:700;}
-  .toolbar a.btn:hover{background:var(--navy-mid);}
 
   .card{background:#fff;border:.5px solid var(--border);border-radius:12px;overflow:auto;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -43,11 +41,11 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
     titulo: 'Dashboard',
     subtitulo: 'Histórico de citas Rayos X: research, destinatario y estado de envío. <a href="/conectar">Conectar mi calendario →</a>',
     ancho: true,
+    compacto: true,
   })}
   <div class="wrap ancho">
     <div class="toolbar">
       <input id="buscar" type="text" placeholder="Buscar por institución, representante o correo...">
-      <a class="btn" href="/eventos?limit=500" target="_blank">Ver JSON crudo</a>
     </div>
     <div class="card">
       <table id="tabla">
