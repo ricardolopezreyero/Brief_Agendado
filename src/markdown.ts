@@ -1,4 +1,6 @@
 // RLR
+export const LOGO_SUPERLEADS = 'https://assets.cdn.filesafe.space/E6Gh1sE1RnPtadmL7wmG/media/698e530bc08665d629146a14.png';
+
 export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

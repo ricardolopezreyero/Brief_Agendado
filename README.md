@@ -72,9 +72,15 @@ El calendario de Ricardo sigue siendo el original: vive en el secret
 mandó, estado de research/envío y hora de envío, con búsqueda. Por cada fila:
 
 - **Ver** — abre `/eventos/:uid/ver`, una página con el dossier completo
-  renderizado (no solo el .md crudo) más un botón para mandar el correo
-  desde ahí mismo.
+  renderizado (no solo el .md crudo) más botones para mandar el correo o
+  descargar el PDF desde ahí mismo.
 - **Descargar .md** — baja el dossier en markdown.
+- **Descargar PDF** (solo en `/ver`) — genera un PDF con estilo SuperLeads
+  (logo, header navy, tipografía Plus Jakarta Sans) **100% en el navegador**,
+  sin tocar el servidor: usa `html2canvas` para capturar una plantilla oculta
+  con la marca y `jsPDF` para armar el archivo, paginando si el dossier no
+  cabe en una hoja A4. El nombre del archivo lleva timestamp:
+  `brief-<institución>-YYYYMMDD-HHmm.pdf`.
 - **Mandar correo / Reenviar correo** — dispara el envío del brief en el
   acto (sin esperar a las 9am ni al cron), con confirmación antes de enviar.
 

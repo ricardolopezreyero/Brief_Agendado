@@ -1,13 +1,13 @@
 // RLR
 import type { EventoRecord } from './types';
-import { escapeHtml, fechaLegibleCDMX } from './markdown';
+import { escapeHtml, fechaLegibleCDMX, LOGO_SUPERLEADS } from './markdown';
 
 interface Mensaje {
   tipo: 'ok' | 'error';
   texto: string;
 }
 
-const LOGO_URL = 'https://assets.cdn.filesafe.space/E6Gh1sE1RnPtadmL7wmG/media/698e530bc08665d629146a14.png';
+const LOGO_URL = LOGO_SUPERLEADS;
 
 const ESTILOS_COMPARTIDOS = `
   :root{
