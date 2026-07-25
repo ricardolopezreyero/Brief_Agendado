@@ -117,7 +117,9 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
           verA.className = 'dl'; verA.target = '_blank'; verA.href = '/eventos/' + uidEnc + '/ver'; verA.textContent = 'Ver';
           const dlA = document.createElement('a');
           dlA.className = 'dl'; dlA.href = '/eventos/' + uidEnc + '/dossier'; dlA.textContent = 'Descargar .md';
-          tdResumen.append(verA, dlA);
+          const pdfA = document.createElement('a');
+          pdfA.className = 'dl'; pdfA.target = '_blank'; pdfA.href = '/eventos/' + uidEnc + '/ver?descargar=pdf'; pdfA.textContent = 'PDF';
+          tdResumen.append(verA, dlA, pdfA);
         } else if (ev.research_status === 'manual' || ev.research_status === 'error') {
           const btn = document.createElement('button');
           btn.className = 'btn-enviar';

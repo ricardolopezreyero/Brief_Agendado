@@ -83,11 +83,13 @@ compartido con `/conectar` y `/eventos/:uid/ver`). Por cada fila:
   renderizado (no solo el .md crudo) más botones para mandar el correo o
   descargar el PDF desde ahí mismo.
 - **Descargar .md** — baja el dossier en markdown.
-- **Descargar PDF** (solo en `/ver`) — genera un PDF con estilo SuperLeads
-  (logo, header navy, tipografía Plus Jakarta Sans) **100% en el navegador**,
-  sin tocar el servidor: usa `html2canvas` para capturar una plantilla oculta
-  con la marca y `jsPDF` para armar el archivo. La paginación es a nivel de
-  bloque (párrafo/lista/encabezado), nunca corta texto a la mitad, y un
+- **PDF** — abre `/eventos/:uid/ver?descargar=pdf` en una pestaña nueva y
+  dispara la descarga sola apenas carga (sin tener que darle clic de nuevo
+  ahí). El PDF tiene estilo SuperLeads (logo, header navy, tipografía Plus
+  Jakarta Sans) y se genera **100% en el navegador**, sin tocar el servidor:
+  usa `html2canvas` para capturar una plantilla oculta con la marca y
+  `jsPDF` para armar el archivo. La paginación es a nivel de bloque
+  (párrafo/lista/encabezado), nunca corta texto a la mitad, y un
   encabezado nunca se queda solo al pie de una página — si no cabe junto con
   el contenido que le sigue, ambos se empujan a la siguiente. Las imágenes se
   embeben como JPEG (no PNG) para que el archivo pese poco. El nombre lleva

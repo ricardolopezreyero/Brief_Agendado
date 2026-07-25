@@ -257,6 +257,12 @@ export function paginaVerDossier(evento: EventoRecord): string {
         btn.textContent = original;
       }
     }
+
+    // Permite disparar la descarga desde otra pantalla (el dashboard) sin
+    // tener que entrar aquí y darle clic de nuevo: /ver?descargar=pdf
+    if (new URLSearchParams(location.search).get('descargar') === 'pdf') {
+      window.addEventListener('load', () => generarPDF(document.getElementById('btnPdf')));
+    }
   </script>
 </body>
 </html>`;
