@@ -148,10 +148,6 @@ ${headAbiertoHtml('Conectar calendario — Brief Agendado')}
         <small>La del paso 3-4 arriba — la "secreta", no la "pública".</small>
         <input type="url" name="ics_url" required placeholder="https://calendar.google.com/calendar/ical/.../private-.../basic.ics">
       </label>
-      <label>Código de acceso
-        <small>Te lo comparte tu líder de equipo.</small>
-        <input type="text" name="code" required>
-      </label>
       <button type="submit">Conectar calendario</button>
       <p class="nota-privacidad">Esta URL solo se usa para leer tus citas de Rayos X — no se comparte con nadie ni se hace pública.</p>
     </form>

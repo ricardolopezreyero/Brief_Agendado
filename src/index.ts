@@ -112,9 +112,6 @@ export default {
 
       if (method === 'POST' && pathname === '/colaboradores') {
         const body = await parseCuerpo(request);
-        if (body.code !== env.CONNECT_CODE) {
-          return html(paginaConectar({ tipo: 'error', texto: 'Código de acceso incorrecto.' }), 403);
-        }
         if (!body.nombre || !body.correo || !body.ics_url) {
           return html(paginaConectar({ tipo: 'error', texto: 'Faltan campos.' }), 400);
         }

@@ -59,8 +59,8 @@ es copiar la dirección "pública" en vez de la "secreta").
    el calendario personal sin filtrar nada a mano.
 2. Llena nombre + correo + la URL **secreta** del feed .ics (Configuración
    del calendario → "Integrar el calendario" → "Dirección secreta en formato
-   iCal", con el ícono del ojo 👁) + el código de acceso compartido (secret
-   `CONNECT_CODE`).
+   iCal", con el ícono del ojo 👁). Sin código de acceso — es una herramienta
+   interna, `/conectar` no está enlazado desde ningún lado público.
 3. El Worker valida que la URL sea un feed .ics real antes de guardarla.
 4. **Backlog de citas ya agendadas**: si el comercial ya tenía citas "Rayos X"
    agendadas antes de conectar su calendario, esas NO se investigan solas —
@@ -121,7 +121,6 @@ wrangler secret put DEEPSEEK_API_KEY
 wrangler secret put BRAVE_API_KEY
 wrangler secret put RESEND_API_KEY
 wrangler secret put CALENDAR_ICS_URL   # URL privada del feed .ics de Ricardo, nunca en el código
-wrangler secret put CONNECT_CODE        # código que deben dar los comerciales para conectar su calendario en /conectar
 ```
 
 Opcional: `BRIEF_TO_EMAIL` (variable, no secret) — respaldo si un evento no
@@ -136,7 +135,6 @@ wrangler secret put DEEPSEEK_API_KEY
 wrangler secret put BRAVE_API_KEY
 wrangler secret put RESEND_API_KEY
 wrangler secret put CALENDAR_ICS_URL
-wrangler secret put CONNECT_CODE
 wrangler deploy
 ```
 

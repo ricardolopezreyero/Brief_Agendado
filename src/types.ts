@@ -6,7 +6,6 @@ export interface Env {
   RESEND_API_KEY: string;
   CALENDAR_ICS_URL: string;
   BRIEF_TO_EMAIL?: string; // opcional, default Ricardo@SuperLeads.mx
-  CONNECT_CODE: string; // código compartido que deben dar los comerciales para conectar su calendario
 }
 
 export interface EventoICS {
