@@ -1,9 +1,13 @@
 // RLR
 import type { Env } from './types';
-import { pollCalendario, enviarBriefsDelDia } from './scheduled';
-import { listEventos, getEvento, getLogs, insertLog, insertColaborador, listColaboradores, marcarEnviado, marcarErrorEnvio } from './db';
+import { pollCalendario, enviarBriefsDelDia, descubrirExistentes, investigarEvento } from './scheduled';
+import {
+  listEventos, getEvento, getLogs, insertLog, insertColaborador, listColaboradores,
+  marcarEnviado, marcarErrorEnvio, marcarErrorResearch,
+} from './db';
 import { paginaDashboard } from './dashboard';
 import { paginaVerDossier } from './viewer';
+import { paginaConectar, paginaConectado } from './conectar';
 import { enviarBrief } from './email';
 
 // Ricardo López Reyero
@@ -20,49 +24,6 @@ function html(body: string, status = 200): Response {
   return new Response(body, { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
-function formularioConectar(mensaje?: { tipo: 'ok' | 'error'; texto: string }): string {
-  const aviso = mensaje
-    ? `<p style="margin:0 0 20px;padding:12px 16px;border-radius:8px;font-size:14px;background:${mensaje.tipo === 'ok' ? '#e6f4ea' : '#fdecea'};color:${mensaje.tipo === 'ok' ? '#1e7e34' : '#c0392b'};">${mensaje.texto}</p>`
-    : '';
-  return `<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Conectar calendario — Brief Agendado</title>
-  <style>
-    body{margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
-    .card{max-width:480px;margin:48px auto;background:#fff;border-radius:12px;padding:32px;}
-    h1{font-size:20px;color:#1a2b4c;margin:0 0 6px;}
-    p.sub{font-size:14px;color:#5b6472;margin:0 0 24px;}
-    label{display:block;font-size:13px;color:#2b3646;margin:16px 0 6px;font-weight:600;}
-    input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #dde1e7;border-radius:8px;font-size:14px;}
-    small{display:block;color:#9aa2b1;font-size:12px;margin-top:4px;}
-    button{margin-top:24px;width:100%;padding:12px;border:none;border-radius:8px;background:#3457d5;color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Conecta tu calendario a Brief Agendado</h1>
-    <p class="sub">Solo para comerciales SuperLeads. Cualquier cita en tu calendario cuyo título contenga <strong>"Rayos X"</strong> disparará una investigación automática del prospecto y te llegará un brief por correo el día de la reunión, a las 9am.</p>
-    ${aviso}
-    <form method="POST" action="/colaboradores">
-      <label>Tu nombre</label>
-      <input type="text" name="nombre" required>
-      <label>Tu correo (aquí te llegarán los briefs)</label>
-      <input type="email" name="correo" required>
-      <label>URL del feed .ics privado de tu calendario
-        <small>Google Calendar → Configuración de tu calendario → "Integrar calendario" → copia la URL privada en formato iCal (basic.ics)</small>
-      </label>
-      <input type="url" name="ics_url" required placeholder="https://calendar.google.com/calendar/ical/.../private-.../basic.ics">
-      <label>Código de acceso</label>
-      <input type="text" name="code" required>
-      <button type="submit">Conectar calendario</button>
-    </form>
-  </div>
-</body>
-</html>`;
-}
-
 async function parseCuerpo(request: Request): Promise<Record<string, string>> {
   const ct = request.headers.get('content-type') ?? '';
   if (ct.includes('application/json')) {
@@ -72,6 +33,10 @@ async function parseCuerpo(request: Request): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   for (const [k, v] of form.entries()) out[k] = String(v);
   return out;
+}
+
+function extraerUid(pathname: string, sufijo: string): string {
+  return decodeURIComponent(pathname.slice('/eventos/'.length, -sufijo.length));
 }
 
 export default {
@@ -85,11 +50,11 @@ export default {
       }
 
       if (method === 'GET' && pathname === '/conectar') {
-        return html(formularioConectar());
+        return html(paginaConectar());
       }
 
       if (method === 'GET' && pathname.startsWith('/eventos/') && pathname.endsWith('/dossier')) {
-        const uid = decodeURIComponent(pathname.slice('/eventos/'.length, -'/dossier'.length));
+        const uid = extraerUid(pathname, '/dossier');
         const evento = await getEvento(env.DB, uid);
         if (!evento) return json({ error: 'No encontrado' }, 404);
         if (!evento.dossier_md) return json({ error: 'Este evento todavía no tiene dossier' }, 404);
@@ -104,14 +69,14 @@ export default {
       }
 
       if (method === 'GET' && pathname.startsWith('/eventos/') && pathname.endsWith('/ver')) {
-        const uid = decodeURIComponent(pathname.slice('/eventos/'.length, -'/ver'.length));
+        const uid = extraerUid(pathname, '/ver');
         const evento = await getEvento(env.DB, uid);
         if (!evento) return html('<p>No encontrado.</p>', 404);
         return html(paginaVerDossier(evento));
       }
 
       if (method === 'POST' && pathname.startsWith('/eventos/') && pathname.endsWith('/enviar')) {
-        const uid = decodeURIComponent(pathname.slice('/eventos/'.length, -'/enviar'.length));
+        const uid = extraerUid(pathname, '/enviar');
         const evento = await getEvento(env.DB, uid);
         if (!evento) return json({ ok: false, error: 'No encontrado' }, 404);
 
@@ -126,27 +91,59 @@ export default {
         return json({ ok: false, error: resultado.error ?? 'Error desconocido al enviar' }, 500);
       }
 
+      // Dispara la investigación de una cita que quedó en estado 'manual'
+      // (ya agendada al momento de conectar el calendario) o que falló antes.
+      if (method === 'POST' && pathname.startsWith('/eventos/') && pathname.endsWith('/investigar')) {
+        const uid = extraerUid(pathname, '/investigar');
+        const evento = await getEvento(env.DB, uid);
+        if (!evento) return json({ ok: false, error: 'No encontrado' }, 404);
+
+        try {
+          await investigarEvento(env, evento.uid, evento.summary, evento.raw_description);
+          await insertLog(env.DB, 'INFO', '✓ Dossier generado manualmente', uid);
+          return json({ ok: true });
+        } catch (e: any) {
+          const error = e?.message ?? String(e);
+          await marcarErrorResearch(env.DB, uid, error);
+          await insertLog(env.DB, 'ERROR', `✗ Falló research manual: ${error}`, uid);
+          return json({ ok: false, error }, 500);
+        }
+      }
+
       if (method === 'POST' && pathname === '/colaboradores') {
         const body = await parseCuerpo(request);
         if (body.code !== env.CONNECT_CODE) {
-          return html(formularioConectar({ tipo: 'error', texto: 'Código de acceso incorrecto.' }), 403);
+          return html(paginaConectar({ tipo: 'error', texto: 'Código de acceso incorrecto.' }), 403);
         }
         if (!body.nombre || !body.correo || !body.ics_url) {
-          return html(formularioConectar({ tipo: 'error', texto: 'Faltan campos.' }), 400);
+          return html(paginaConectar({ tipo: 'error', texto: 'Faltan campos.' }), 400);
         }
         try {
           const prueba = await fetch(body.ics_url);
           const texto = prueba.ok ? await prueba.text() : '';
           if (!prueba.ok || !texto.startsWith('BEGIN:VCALENDAR')) {
-            return html(formularioConectar({ tipo: 'error', texto: 'Esa URL no parece ser un feed .ics válido. Revisa que sea la URL privada en formato iCal.' }), 400);
+            return html(paginaConectar({ tipo: 'error', texto: 'Esa URL no parece ser un feed .ics válido. Revisa que sea la dirección SECRETA en formato iCal (no la pública).' }), 400);
           }
         } catch {
-          return html(formularioConectar({ tipo: 'error', texto: 'No se pudo acceder a esa URL. Revisa que esté completa y sea pública/privada tipo .ics.' }), 400);
+          return html(paginaConectar({ tipo: 'error', texto: 'No se pudo acceder a esa URL. Revisa que esté completa y sea del feed .ics.' }), 400);
         }
 
-        await insertColaborador(env.DB, { nombre: body.nombre, correo: body.correo, icsUrl: body.ics_url });
+        const colaboradorId = await insertColaborador(env.DB, { nombre: body.nombre, correo: body.correo, icsUrl: body.ics_url });
         await insertLog(env.DB, 'INFO', `▶ Nuevo colaborador conectado: ${body.nombre} <${body.correo}>`);
-        return html(formularioConectar({ tipo: 'ok', texto: `Listo, ${body.nombre}. Tu calendario ya está conectado.` }));
+
+        // Citas "Rayos X" que ya existían en su calendario: se guardan pero NO
+        // se investigan solas — de ahí en adelante sí, vía pollCalendario.
+        let backlog: Awaited<ReturnType<typeof descubrirExistentes>> = [];
+        try {
+          backlog = await descubrirExistentes(env, { colaboradorId, nombre: body.nombre, correo: body.correo, icsUrl: body.ics_url });
+          if (backlog.length) {
+            await insertLog(env.DB, 'INFO', `${backlog.length} cita(s) Rayos X ya agendada(s) encontrada(s) para ${body.nombre}, quedan para generar manualmente`);
+          }
+        } catch (e: any) {
+          await insertLog(env.DB, 'WARNING', `No se pudo revisar el backlog de citas de ${body.nombre}: ${e?.message ?? e}`);
+        }
+
+        return html(paginaConectado(body.nombre, backlog));
       }
 
       if (method === 'GET' && pathname === '/colaboradores') {

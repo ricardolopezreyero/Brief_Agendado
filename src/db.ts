@@ -24,15 +24,19 @@ export async function eventoConResearchFallido(db: D1Database, uid: string): Pro
   return !!row;
 }
 
-export async function insertEventoBase(db: D1Database, evento: EventoICS, destinatario: { email: string; nombre: string; colaboradorId: number | null }): Promise<void> {
+export async function insertEventoBase(
+  db: D1Database, evento: EventoICS,
+  destinatario: { email: string; nombre: string; colaboradorId: number | null },
+  estadoInicial: 'pendiente' | 'manual' = 'pendiente',
+): Promise<void> {
   await db.prepare(`
     INSERT INTO eventos_rayosx (uid, summary, start_utc, raw_description, destinatario_email, destinatario_nombre, colaborador_id, research_status, email_status, creado_en)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'pendiente', 'pendiente', ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)
     ON CONFLICT(uid) DO NOTHING
   `).bind(
     evento.uid, evento.summary, evento.startUtc, evento.descriptionRaw,
     destinatario.email, destinatario.nombre, destinatario.colaboradorId,
-    new Date().toISOString(),
+    estadoInicial, new Date().toISOString(),
   ).run();
 }
 
@@ -41,9 +45,10 @@ export async function listColaboradoresActivos(db: D1Database): Promise<Colabora
   return results as unknown as Colaborador[];
 }
 
-export async function insertColaborador(db: D1Database, c: { nombre: string; correo: string; icsUrl: string }): Promise<void> {
-  await db.prepare('INSERT INTO colaboradores (nombre, correo, ics_url, activo, creado_en) VALUES (?, ?, ?, 1, ?)')
-    .bind(c.nombre, c.correo, c.icsUrl, new Date().toISOString()).run();
+export async function insertColaborador(db: D1Database, c: { nombre: string; correo: string; icsUrl: string }): Promise<number> {
+  const r = await db.prepare('INSERT INTO colaboradores (nombre, correo, ics_url, activo, creado_en) VALUES (?, ?, ?, 1, ?) RETURNING id')
+    .bind(c.nombre, c.correo, c.icsUrl, new Date().toISOString()).first<{ id: number }>();
+  return r!.id;
 }
 
 export async function listColaboradores(db: D1Database): Promise<Colaborador[]> {
@@ -113,4 +118,14 @@ export async function listEventos(db: D1Database, limit: number): Promise<Evento
 export async function getEvento(db: D1Database, uid: string): Promise<EventoRecord | null> {
   const row = await db.prepare('SELECT * FROM eventos_rayosx WHERE uid = ?').bind(uid).first<EventoRecord>();
   return row ?? null;
+}
+
+// Citas "Rayos X" que ya existían en el calendario de un colaborador al momento
+// de conectarlo — quedan en research_status='manual' hasta que alguien las
+// dispare a mano (ver /eventos/:uid/investigar). Las nuevas de ahí en adelante
+// sí se investigan solas (ver pollCalendario).
+export async function eventosManualesDeColaborador(db: D1Database, colaboradorId: number): Promise<EventoRecord[]> {
+  const { results } = await db.prepare(`SELECT * FROM eventos_rayosx WHERE colaborador_id = ? AND research_status = 'manual' ORDER BY start_utc ASC`)
+    .bind(colaboradorId).all();
+  return results as unknown as EventoRecord[];
 }

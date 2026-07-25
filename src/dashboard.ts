@@ -75,7 +75,7 @@ export function paginaDashboard(): string {
       const info = mapa[status] || { clase: 'pend', texto: status };
       return '<span class="pill ' + info.clase + '">' + info.texto + '</span>';
     }
-    const RESEARCH = { pendiente: {clase:'pend', texto:'pendiente'}, listo: {clase:'ok', texto:'listo'}, error: {clase:'err', texto:'error'} };
+    const RESEARCH = { pendiente: {clase:'pend', texto:'pendiente'}, manual: {clase:'pend', texto:'sin generar'}, listo: {clase:'ok', texto:'listo'}, error: {clase:'err', texto:'error'} };
     const ENVIO = { pendiente: {clase:'pend', texto:'pendiente'}, enviado: {clase:'ok', texto:'enviado'}, error: {clase:'err', texto:'error'} };
 
     async function cargar() {
@@ -94,9 +94,14 @@ export function paginaDashboard(): string {
       for (const ev of eventos) {
         const tr = document.createElement('tr');
         const uidEnc = encodeURIComponent(ev.uid);
-        const resumen = ev.dossier_md
-          ? '<a class="dl" href="/eventos/' + uidEnc + '/ver" target="_blank">Ver</a><a class="dl" href="/eventos/' + uidEnc + '/dossier">Descargar .md</a>'
-          : '<span class="dl disabled">—</span>';
+        let resumen;
+        if (ev.dossier_md) {
+          resumen = '<a class="dl" href="/eventos/' + uidEnc + '/ver" target="_blank">Ver</a><a class="dl" href="/eventos/' + uidEnc + '/dossier">Descargar .md</a>';
+        } else if (ev.research_status === 'manual' || ev.research_status === 'error') {
+          resumen = '<button class="btn-enviar" onclick="generarBrief(this, \'' + ev.uid.replace(/'/g, "\\'") + '\')">Generar brief</button>';
+        } else {
+          resumen = '<span class="dl disabled">—</span>';
+        }
         const textoBoton = ev.email_status === 'enviado' ? 'Reenviar correo' : 'Mandar correo';
         const claseBoton = ev.email_status === 'enviado' ? 'btn-enviar enviado' : 'btn-enviar';
         tr.innerHTML =
@@ -135,6 +140,27 @@ export function paginaDashboard(): string {
         alert('Error de red al enviar.');
         btn.textContent = original;
       } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function generarBrief(btn, uid) {
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Investigando...';
+      try {
+        const r = await fetch('/eventos/' + encodeURIComponent(uid) + '/investigar', { method: 'POST' });
+        const data = await r.json();
+        if (data.ok) {
+          await cargar();
+        } else {
+          alert('No se pudo generar: ' + (data.error || 'error desconocido'));
+          btn.textContent = original;
+          btn.disabled = false;
+        }
+      } catch (e) {
+        alert('Error de red.');
+        btn.textContent = original;
         btn.disabled = false;
       }
     }

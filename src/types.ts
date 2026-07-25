@@ -62,7 +62,7 @@ export interface EventoRecord {
   destinatario_nombre: string | null;
   colaborador_id: number | null;
   dossier_md: string | null;
-  research_status: 'pendiente' | 'listo' | 'error';
+  research_status: 'pendiente' | 'manual' | 'listo' | 'error';
   research_error: string | null;
   email_status: 'pendiente' | 'enviado' | 'error' | 'sin_dossier';
   email_error: string | null;

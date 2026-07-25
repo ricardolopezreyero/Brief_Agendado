@@ -7,7 +7,7 @@ import { enviarBrief } from './email';
 import {
   insertLog, eventoExiste, eventoConResearchFallido, insertEventoBase, guardarProspecto, guardarDossier,
   marcarErrorResearch, marcarEnviado, marcarErrorEnvio, eventosParaEnviarHoy,
-  listColaboradoresActivos,
+  listColaboradoresActivos, eventosManualesDeColaborador,
 } from './db';
 
 const HORIZONTE_DIAS = 60; // ignora eventos a más de 60 días, evita procesar un calendario histórico enorme en el primer poll
@@ -29,12 +29,35 @@ async function fuentesDeCalendario(env: Env): Promise<FuenteCalendario[]> {
   return fuentes;
 }
 
-async function investigarEvento(env: Env, uid: string, summary: string, descripcion: string): Promise<void> {
+export async function investigarEvento(env: Env, uid: string, summary: string, descripcion: string): Promise<void> {
   const prospecto = await extraerProspecto(env.DEEPSEEK_API_KEY, summary, descripcion);
   await guardarProspecto(env.DB, uid, prospecto);
 
   const dossier = await ejecutarResearch(env.DEEPSEEK_API_KEY, env.BRAVE_API_KEY, prospecto);
   await guardarDossier(env.DB, uid, dossier);
+}
+
+// Se corre una sola vez, justo al conectar un colaborador: guarda (sin
+// investigar) las citas "Rayos X" que ya estaban agendadas en su calendario,
+// para que las dispare manualmente desde /conectar o el dashboard. De ahí en
+// adelante, pollCalendario() se encarga solo de las citas nuevas.
+export async function descubrirExistentes(env: Env, fuente: FuenteCalendario): Promise<EventoRecord[]> {
+  const ahora = Date.now();
+  const limite = ahora + HORIZONTE_DIAS * 24 * 60 * 60 * 1000;
+
+  const eventos = await fetchCalendario(fuente.icsUrl);
+  const relevantes = eventos.filter(ev => {
+    const t = new Date(ev.startUtc).getTime();
+    const enRango = Number.isFinite(t) && t >= ahora && t <= limite;
+    return enRango && ev.summary.toLowerCase().includes(PALABRA_CLAVE);
+  });
+
+  for (const ev of relevantes) {
+    if (await eventoExiste(env.DB, ev.uid)) continue;
+    await insertEventoBase(env.DB, ev, { email: fuente.correo, nombre: fuente.nombre, colaboradorId: fuente.colaboradorId }, 'manual');
+  }
+
+  return fuente.colaboradorId ? eventosManualesDeColaborador(env.DB, fuente.colaboradorId) : [];
 }
 
 export async function pollCalendario(env: Env): Promise<void> {
@@ -100,10 +123,11 @@ function rangoHoyCDMX(): { inicioUtc: string; finUtc: string; horaCDMX: number }
 }
 
 async function asegurarResearch(env: Env, evento: EventoRecord): Promise<EventoRecord> {
-  if (evento.research_status !== 'pendiente') return evento;
-  // Cae aquí solo si la cita apareció después del último poll (p.ej. agendada
-  // el mismo día) y todavía no tiene research — se corre aquí como respaldo
-  // para no mandar el correo del día sin dossier si se puede evitar.
+  if (evento.research_status === 'listo') return evento;
+  // Cae aquí si la cita apareció después del último poll, o si quedó en
+  // 'manual' (backlog al conectar el calendario) y nadie la disparó a mano
+  // antes del día de la junta — se corre aquí como respaldo para no mandar
+  // el correo del día sin dossier si se puede evitar.
   try {
     await investigarEvento(env, evento.uid, evento.summary, evento.raw_description);
     await insertLog(env.DB, 'INFO', '✓ Dossier generado como respaldo antes del envío', evento.uid);

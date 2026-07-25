@@ -43,14 +43,25 @@ Cron cada 15 min ── scheduled()
 
 ## Cómo conecta un comercial nuevo su calendario
 
-1. Entra a `/conectar`, llena nombre + correo + URL del feed .ics privado de
-   su calendario de Google (Configuración del calendario → "Integrar
-   calendario" → URL privada en formato iCal) + el código de acceso
-   compartido (secret `CONNECT_CODE`).
-2. El Worker valida que la URL sea un feed .ics real antes de guardarla.
-3. Listo — cualquier cita en su calendario con "Rayos X" en el título
-   dispara la investigación y el brief le llega a su propio correo, sin
-   tocar código.
+`/conectar` está diseñado con marca SuperLeads y pasos ilustrados (incluye un
+mockup de dónde sacar la URL correcta en Google Calendar — el error más común
+es copiar la dirección "pública" en vez de la "secreta").
+
+1. Entra a `/conectar`. La página deja clarísimo que la palabra clave es
+   **"Rayos X"**: solo se investigan y mandan brief las citas cuyo **título**
+   la contenga — el resto del calendario se ignora, así que se puede conectar
+   el calendario personal sin filtrar nada a mano.
+2. Llena nombre + correo + la URL **secreta** del feed .ics (Configuración
+   del calendario → "Integrar el calendario" → "Dirección secreta en formato
+   iCal", con el ícono del ojo 👁) + el código de acceso compartido (secret
+   `CONNECT_CODE`).
+3. El Worker valida que la URL sea un feed .ics real antes de guardarla.
+4. **Backlog de citas ya agendadas**: si el comercial ya tenía citas "Rayos X"
+   agendadas antes de conectar su calendario, esas NO se investigan solas —
+   aparecen listadas en la pantalla de confirmación con un botón **"Generar
+   brief"** por cada una, para dispararlas a mano cuando quiera. De ahí en
+   adelante, cualquier cita nueva sí es 100% automática (la agarra el
+   siguiente `pollCalendario()`).
 
 El calendario de Ricardo sigue siendo el original: vive en el secret
 `CALENDAR_ICS_URL` y no pasa por esta tabla.
@@ -119,6 +130,8 @@ wrangler deploy
 - **`GET /eventos/:uid/ver`** — dossier renderizado + botón de envío manual.
 - **`GET /eventos/:uid/dossier`** — descarga el dossier en markdown.
 - **`POST /eventos/:uid/enviar`** — manda el brief de esa cita ahora mismo.
+- **`POST /eventos/:uid/investigar`** — genera el dossier de una cita en
+  estado `manual` (backlog al conectar) o reintenta una que falló.
 - **`GET /colaboradores`** — lista de comerciales conectados.
 - **`GET /logs?lines=80`** — logs recientes en JSON.
 - **`POST /probar-poll`** — dispara manualmente el poll de calendarios (sin
@@ -130,7 +143,7 @@ wrangler deploy
 
 | Campo | Valores | Qué significa |
 |---|---|---|
-| `research_status` | `pendiente` / `listo` / `error` | si el dossier ya se generó |
+| `research_status` | `pendiente` / `manual` / `listo` / `error` | `manual` = ya agendada al conectar el calendario, esperando el botón "Generar brief"; el resto se explica solo |
 | `email_status` | `pendiente` / `enviado` / `error` | si el brief ya se mandó |
 
 Si el research falla, el correo del día se manda de todos modos con los
@@ -161,6 +174,7 @@ src/
   markdown.ts       Render compartido de markdown→HTML (dossier) + fecha CDMX
   dashboard.ts      HTML del dashboard (/)
   viewer.ts         HTML de /eventos/:uid/ver (dossier + botón de envío)
-  index.ts          Router HTTP + cron + formulario /conectar
+  conectar.ts        HTML de /conectar (marca SuperLeads, pasos + backlog manual)
+  index.ts          Router HTTP + cron
 migrations/         Esquema D1
 ```
