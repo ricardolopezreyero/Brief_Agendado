@@ -26,10 +26,16 @@ Cron cada 15 min ── scheduled()
         representante, teléfono, correo, WhatsApp, asesor, Zoom, SL Comercial)
       - Corre el research: DeepSeek diseña 5-6 queries → se ejecutan en
         Brave Search API → DeepSeek redacta el dossier ejecutivo (resumen,
-        la institución, el representante, cruce con el ICP de SuperLeads,
+        la institución, **redes sociales oficiales con seguidores si se
+        encuentran**, el representante, cruce con el ICP de SuperLeads,
         anclajes de personalización con fuente, score de fit, recomendación)
         siguiendo la estructura de la skill deep-research-agent
-      - Tope de 5 investigaciones por corrida (límite de subrequests del
+      - Las redes sociales se detectan primero directamente en el HTML del
+        sitio oficial (header/footer, donde casi siempre están) — más
+        confiable que depender solo de resultados de búsqueda; el número de
+        seguidores sí se busca aparte y solo se reporta si aparece
+        explícitamente en una fuente (nunca se inventa)
+      - Tope de 4 investigaciones por corrida (límite de subrequests del
         plan gratuito de Cloudflare) — lo que no alcanza, sigue en la
         siguiente corrida
    2. enviarBriefsDelDia()
@@ -78,9 +84,12 @@ mandó, estado de research/envío y hora de envío, con búsqueda. Por cada fila
 - **Descargar PDF** (solo en `/ver`) — genera un PDF con estilo SuperLeads
   (logo, header navy, tipografía Plus Jakarta Sans) **100% en el navegador**,
   sin tocar el servidor: usa `html2canvas` para capturar una plantilla oculta
-  con la marca y `jsPDF` para armar el archivo, paginando si el dossier no
-  cabe en una hoja A4. El nombre del archivo lleva timestamp:
-  `brief-<institución>-YYYYMMDD-HHmm.pdf`.
+  con la marca y `jsPDF` para armar el archivo. La paginación es a nivel de
+  bloque (párrafo/lista/encabezado), nunca corta texto a la mitad, y un
+  encabezado nunca se queda solo al pie de una página — si no cabe junto con
+  el contenido que le sigue, ambos se empujan a la siguiente. Las imágenes se
+  embeben como JPEG (no PNG) para que el archivo pese poco. El nombre lleva
+  timestamp: `brief-<institución>-AAAA_MM_DD-HH_MM.pdf`.
 - **Mandar correo / Reenviar correo** — dispara el envío del brief en el
   acto (sin esperar a las 9am ni al cron), con confirmación antes de enviar.
 

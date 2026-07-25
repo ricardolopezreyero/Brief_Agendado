@@ -42,7 +42,7 @@ export function dossierToHtml(md: string): string {
     if (!line) { flushParagraph(); flushList(); continue; }
     if (line.startsWith('## ')) {
       flushParagraph(); flushList();
-      blocks.push(`<p style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#1a2b4c;border-bottom:1px solid #eef0f3;padding-bottom:6px;">${escapeHtml(line.slice(3))}</p>`);
+      blocks.push(`<p data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#1a2b4c;border-bottom:1px solid #eef0f3;padding-bottom:6px;">${escapeHtml(line.slice(3))}</p>`);
     } else if (line.startsWith('- ')) {
       flushParagraph();
       list.push(line.slice(2).trim());

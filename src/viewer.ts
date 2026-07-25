@@ -137,7 +137,64 @@ export function paginaVerDossier(evento: EventoRecord): string {
     function timestampArchivo() {
       const d = new Date();
       const pad = n => String(n).padStart(2, '0');
-      return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes());
+      return d.getFullYear() + '_' + pad(d.getMonth()+1) + '_' + pad(d.getDate()) + '-' + pad(d.getHours()) + '_' + pad(d.getMinutes());
+    }
+
+    const PDF_PAGE_W = 794;
+    const PDF_PAGE_H = Math.round(PDF_PAGE_W * 297 / 210); // proporción A4
+
+    // Agrupa los bloques del dossier en páginas sin cortar ninguno a la mitad
+    // (cada párrafo/lista/encabezado es un bloque atómico). Además, un
+    // encabezado nunca se queda solo al pie de página: si no cabe junto con
+    // el bloque que le sigue, ambos se empujan a la página siguiente.
+    function paginarBloques(blocks) {
+      const pages = [[]];
+      let alto = 0;
+      for (let i = 0; i < blocks.length; i++) {
+        const b = blocks[i];
+        const h = b.el.getBoundingClientRect().height;
+        const esEncabezado = b.el.dataset && b.el.dataset.h === '1';
+        let necesario = h;
+        if (esEncabezado && blocks[i + 1]) {
+          necesario += blocks[i + 1].el.getBoundingClientRect().height;
+        }
+        const disponible = PDF_PAGE_H - alto;
+        if (alto > 0 && necesario > disponible && h <= PDF_PAGE_H) {
+          pages.push([]);
+          alto = 0;
+        }
+        pages[pages.length - 1].push(b);
+        alto += h;
+      }
+      return pages;
+    }
+
+    function construirPagina(items) {
+      const cont = document.createElement('div');
+      cont.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + PDF_PAGE_W + 'px;background:#fff;font-family:"Plus Jakarta Sans",-apple-system,Segoe UI,Roboto,sans-serif;';
+
+      let i = 0;
+      if (items[i] && items[i].kind === 'header') {
+        cont.appendChild(items[i].el.cloneNode(true));
+        i++;
+      }
+
+      const bodyItems = [];
+      let footerItem = null;
+      for (; i < items.length; i++) {
+        if (items[i].kind === 'footer') footerItem = items[i];
+        else bodyItems.push(items[i]);
+      }
+      if (bodyItems.length) {
+        const wrap = document.createElement('div');
+        wrap.style.padding = cont.childNodes.length ? '28px 40px' : '32px 40px 8px';
+        for (const b of bodyItems) wrap.appendChild(b.el.cloneNode(true));
+        cont.appendChild(wrap);
+      }
+      if (footerItem) cont.appendChild(footerItem.el.cloneNode(true));
+
+      document.body.appendChild(cont);
+      return cont;
     }
 
     async function generarPDF(btn) {
@@ -148,33 +205,45 @@ export function paginaVerDossier(evento: EventoRecord): string {
       estado.style.color = '#5b6472';
       estado.textContent = '';
 
+      const temporales = [];
       try {
         // Clona el dossier renderizado hacia la plantilla oculta con estilo SuperLeads
         document.getElementById('dossierBodyPdf').innerHTML = document.getElementById('dossierBody').innerHTML;
         document.getElementById('pdfFechaGeneracion').textContent = new Date().toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' });
 
         const target = document.getElementById('pdfTarget');
-        const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+        const headerEl = target.children[0];
+        const bodyWrap = target.children[1];
+        const footerEl = target.children[2];
+        const tableEl = bodyWrap.children[0];
+        const dossierWrap = bodyWrap.children[1];
+
+        const blocks = [
+          { el: headerEl, kind: 'header' },
+          { el: tableEl, kind: 'body' },
+          ...Array.from(dossierWrap.children).map(el => ({ el: el, kind: 'body' })),
+          { el: footerEl, kind: 'footer' },
+        ];
+
+        const paginas = paginarBloques(blocks);
+
+        // Primero arma y captura cada página (sin construir el PDF todavía, para
+        // conocer la altura real de cada una antes de crear el documento).
+        const capturas = [];
+        for (const items of paginas) {
+          const cont = construirPagina(items);
+          temporales.push(cont);
+          const alto = cont.offsetHeight;
+          const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+          capturas.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.92), alto: alto });
+        }
 
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = 210, pageHeight = 297;
-        const imgWidth = pageWidth;
-        const imgHeight = canvas.height * imgWidth / canvas.width;
-
-        let heightLeft = imgHeight;
-        let position = 0;
-        const imgData = canvas.toDataURL('image/png');
-
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
+        const pdf = new jsPDF({ unit: 'px', format: [PDF_PAGE_W, capturas[0].alto], hotfixes: ['px_scaling'] });
+        capturas.forEach((cap, idx) => {
+          if (idx > 0) pdf.addPage([PDF_PAGE_W, cap.alto]);
+          pdf.addImage(cap.dataUrl, 'JPEG', 0, 0, PDF_PAGE_W, cap.alto);
+        });
 
         pdf.save('brief-${nombreSlug}-' + timestampArchivo() + '.pdf');
         estado.style.color = '#1e7e34';
@@ -183,6 +252,7 @@ export function paginaVerDossier(evento: EventoRecord): string {
         estado.style.color = '#c0392b';
         estado.textContent = '✗ No se pudo generar el PDF: ' + (e && e.message ? e.message : 'error desconocido');
       } finally {
+        temporales.forEach(n => n.remove());
         btn.disabled = false;
         btn.textContent = original;
       }

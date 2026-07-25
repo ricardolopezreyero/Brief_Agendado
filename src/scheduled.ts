@@ -12,11 +12,12 @@ import {
 
 const HORIZONTE_DIAS = 60; // ignora eventos a más de 60 días, evita procesar un calendario histórico enorme en el primer poll
 const PALABRA_CLAVE = 'rayos x'; // solo eventos cuyo título contenga esto activan la investigación
-// Cada research consume ~7 subrequests (extracción + queries a Brave + redacción). El plan
-// gratuito de Cloudflare limita 50 subrequests por invocación, así que se topa cuántos
-// eventos se investigan por corrida del cron — el resto queda pendiente para la siguiente
-// (cada 15 min), no se pierde nada.
-const MAX_RESEARCH_POR_CORRIDA = 5;
+// Cada research consume ~10 subrequests (extracción + fetch del home para redes
+// sociales + queries a Brave + redacción). El plan gratuito de Cloudflare limita
+// 50 subrequests por invocación, así que se topa cuántos eventos se investigan
+// por corrida del cron — el resto queda pendiente para la siguiente (cada 15
+// min), no se pierde nada.
+const MAX_RESEARCH_POR_CORRIDA = 4;
 
 async function fuentesDeCalendario(env: Env): Promise<FuenteCalendario[]> {
   const fuentes: FuenteCalendario[] = [

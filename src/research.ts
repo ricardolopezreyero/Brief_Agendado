@@ -8,6 +8,43 @@ const ICP_SUPERLEADS = `SuperLeads vende un sistema de admisiones (CRM educativo
 
 const SYSTEM_QUERIES = `Diseñas queries de búsqueda web para investigar a un colegio privado y su representante antes de una reunión comercial de ventas. Devuelve SIEMPRE un único array JSON de 5 a 6 strings (las queries), sin texto adicional. Cada query debe ser específica y ejecutable en un buscador real (nombre propio del colegio, ciudad si se infiere del dominio/teléfono, temas como matrícula, redes sociales, reputación, competencia, noticias recientes). No inventes datos que no te dieron.`;
 
+// Dominios de redes sociales que buscamos directamente en el HTML del sitio
+// oficial (header/footer) — mucho más confiable que confiar en resultados de
+// búsqueda para el LINK en sí. El número de seguidores sí se busca aparte.
+const REDES_DOMINIOS: Array<{ nombre: string; patron: RegExp }> = [
+  { nombre: 'Facebook', patron: /https?:\/\/(www\.)?facebook\.com\/(?!sharer|share|dialog|plugins)[^"'\s<>]+/i },
+  { nombre: 'Instagram', patron: /https?:\/\/(www\.)?instagram\.com\/(?!p\/|reel\/)[^"'\s<>]+/i },
+  { nombre: 'TikTok', patron: /https?:\/\/(www\.)?tiktok\.com\/@[^"'\s<>]+/i },
+  { nombre: 'YouTube', patron: /https?:\/\/(www\.)?youtube\.com\/(channel|c|user|@)[^"'\s<>]+/i },
+  { nombre: 'X / Twitter', patron: /https?:\/\/(www\.)?(x|twitter)\.com\/(?!intent|share)[^"'\s<>]+/i },
+  { nombre: 'LinkedIn', patron: /https?:\/\/(www\.)?linkedin\.com\/(company|school)\/[^"'\s<>]+/i },
+];
+
+function limpiarUrlRedSocial(url: string): string {
+  return url.replace(/["'<>].*$/, '').replace(/[)\].,;]+$/, '');
+}
+
+// Busca links de redes sociales oficiales directamente en el HTML del sitio
+// (casi siempre están en el header o footer del home). Si falla o no hay web,
+// regresa vacío — nunca tumba el research completo.
+export async function extraerRedesSociales(webUrl: string): Promise<Array<{ plataforma: string; url: string }>> {
+  if (!webUrl) return [];
+  try {
+    const r = await fetch(webUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BriefAgendado/1.0)' } });
+    if (!r.ok) return [];
+    const html = await r.text();
+
+    const encontradas: Array<{ plataforma: string; url: string }> = [];
+    for (const { nombre, patron } of REDES_DOMINIOS) {
+      const m = html.match(patron);
+      if (m) encontradas.push({ plataforma: nombre, url: limpiarUrlRedSocial(m[0]) });
+    }
+    return encontradas;
+  } catch {
+    return [];
+  }
+}
+
 const SYSTEM_DOSSIER = `Eres un investigador comercial de SuperLeads que redacta un dossier ejecutivo breve sobre un prospecto (colegio privado) antes de una reunión de ventas llamada "Rayos X de Inscripciones". Escribes en español LATAM, tono profesional y directo.
 
 ICP de referencia:
@@ -26,6 +63,12 @@ Responde en markdown con EXACTAMENTE estas secciones, en este orden:
 
 ## El colegio
 (qué se sabe: tipo de institución, tamaño aparente, ubicación, niveles educativos, propuesta de valor visible)
+
+## Redes sociales
+Si en "Redes sociales detectadas en el sitio oficial" te dieron links, repórtalos tal cual (son confiables, vienen del propio sitio) y agrega el número de seguidores SOLO si aparece explícitamente en los resultados de búsqueda (con fuente). Si no encontraste ninguna red social oficial, escribe "No se encontraron redes sociales oficiales". Nunca inventes un número de seguidores.
+Una red social por línea, SIEMPRE como bullet de markdown (empieza con "- "), nunca como párrafo corrido:
+- **Plataforma**: URL — seguidores: N (Fuente: URL)
+- **Otra plataforma**: URL — seguidores: no encontrado
 
 ## El representante
 (rol, lo que se sabe de su trayectoria/actividad pública si algo se encontró; si no hay nada, decirlo)
@@ -65,6 +108,13 @@ Teléfono: ${p.representante_telefono || '(desconocido)'}`;
   return [base, `${base} colegio privado`, `${base} admisiones`, `${p.representante_nombre} ${base}`].filter(Boolean);
 }
 
+// Se agrega siempre, además de las que diseñe DeepSeek — el número de
+// seguidores casi nunca aparece en el propio sitio, hay que buscarlo aparte.
+function querySeguidores(p: ProspectoExtraido): string | null {
+  const base = p.institucion || p.web;
+  return base ? `${base} seguidores Facebook Instagram` : null;
+}
+
 export async function buscarBrave(braveKey: string, query: string): Promise<FuenteResultado[]> {
   const url = new URL(BRAVE_ENDPOINT);
   url.searchParams.set('q', query);
@@ -89,7 +139,13 @@ export async function buscarBrave(braveKey: string, query: string): Promise<Fuen
 }
 
 export async function ejecutarResearch(deepseekKey: string, braveKey: string, p: ProspectoExtraido): Promise<string> {
-  const queries = await generarQueries(deepseekKey, p);
+  const [queriesGeneradas, redesDetectadas] = await Promise.all([
+    generarQueries(deepseekKey, p),
+    extraerRedesSociales(p.web),
+  ]);
+
+  const seguidores = querySeguidores(p);
+  const queries = seguidores ? [...queriesGeneradas, seguidores] : queriesGeneradas;
 
   const resultadosPorQuery = await Promise.all(queries.map(async q => ({
     query: q,
@@ -102,10 +158,17 @@ export async function ejecutarResearch(deepseekKey: string, braveKey: string, p:
     return `### Query: "${query}"\n${lista}`;
   }).join('\n\n');
 
+  const redesTexto = redesDetectadas.length
+    ? redesDetectadas.map(r => `- ${r.plataforma}: ${r.url}`).join('\n')
+    : '(no se encontraron links de redes sociales en el HTML del sitio oficial — si algo aparece en los resultados de búsqueda, repórtalo con cautela)';
+
   const user = `Perfil del prospecto:
 Institución: ${p.institucion || '(desconocida)'}
 Web: ${p.web || '(desconocida)'}
 Representante: ${p.representante_nombre || '(desconocido)'} — Teléfono: ${p.representante_telefono || '(desconocido)'} — Correo: ${p.representante_correo || '(desconocido)'}
+
+Redes sociales detectadas en el sitio oficial:
+${redesTexto}
 
 Resultados de búsqueda web:
 
