@@ -74,7 +74,7 @@ export function paginaVerDossier(evento: EventoRecord): string {
       <a href="/eventos/${encodeURIComponent(evento.uid)}/dossier">Descargar .md</a>
     </div>
     <div class="card">
-      <p class="eyebrow">Rayos X de Inscripciones</p>
+      <p class="eyebrow">Pre-Rayos X de Inscripciones</p>
       <h1>${escapeHtml(tituloBrief)}</h1>
       <p class="fecha">${fecha}</p>
       <table>${datos}</table>
@@ -94,7 +94,7 @@ export function paginaVerDossier(evento: EventoRecord): string {
   <div id="pdfTarget" style="position:fixed;left:-99999px;top:0;width:794px;background:#fff;font-family:'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;">
     <div style="background:#001240;padding:28px 40px;">
       <img src="${LOGO_SUPERLEADS}" crossorigin="anonymous" style="width:150px;display:block;">
-      <p style="margin:20px 0 4px;font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#56EF9F;">Rayos X de Inscripciones</p>
+      <p style="margin:20px 0 4px;font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#56EF9F;">Pre-Rayos X de Inscripciones</p>
       <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;">${escapeHtml(tituloBrief)}</h1>
       <p style="margin:0;font-size:11.5px;color:#7a9fd4;">${fecha}</p>
     </div>

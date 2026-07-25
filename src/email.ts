@@ -40,7 +40,7 @@ function buildHtml(evento: EventoRecord): string {
         <table role="presentation" width="100%" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
           <tr>
             <td style="padding:32px 32px 8px;">
-              <p style="margin:0 0 4px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#3457d5;">Brief antes de tu reunión — Rayos X de Inscripciones</p>
+              <p style="margin:0 0 4px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#3457d5;">Brief antes de tu reunión — Pre-Rayos X de Inscripciones</p>
               <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#1a2b4c;">${escapeHtml(evento.institucion || evento.summary)}</p>
               <p style="margin:0 0 20px;font-size:13px;color:#9aa2b1;">Hoy, ${fecha}</p>
               <table role="presentation" style="margin:0 0 20px;">
