@@ -24,8 +24,12 @@ export function paginaDashboard(): string {
     .pill.ok{background:#e6f4ea;color:#1e7e34;}
     .pill.pend{background:#fff4e0;color:#a86400;}
     .pill.err{background:#fdecea;color:#c0392b;}
-    .dl{color:#3457d5;text-decoration:none;font-weight:600;}
+    .dl{color:#3457d5;text-decoration:none;font-weight:600;margin-right:10px;}
     .dl.disabled{color:#c3c8d1;pointer-events:none;}
+    .acciones{white-space:nowrap;}
+    .btn-enviar{border:none;background:none;color:#3457d5;font-weight:600;font-size:13px;cursor:pointer;padding:0;font-family:inherit;}
+    .btn-enviar:disabled{color:#c3c8d1;cursor:default;}
+    .btn-enviar.enviado{color:#1e7e34;}
     .muted{color:#9aa2b1;font-size:12px;}
     #empty{padding:40px;text-align:center;color:#9aa2b1;}
   </style>
@@ -52,6 +56,7 @@ export function paginaDashboard(): string {
             <th>Envío</th>
             <th>Enviado el</th>
             <th>Resumen</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody id="cuerpo"></tbody>
@@ -88,9 +93,12 @@ export function paginaDashboard(): string {
       empty.style.display = 'none';
       for (const ev of eventos) {
         const tr = document.createElement('tr');
-        const descarga = ev.dossier_md
-          ? '<a class="dl" href="/eventos/' + encodeURIComponent(ev.uid) + '/dossier">Descargar .md</a>'
+        const uidEnc = encodeURIComponent(ev.uid);
+        const resumen = ev.dossier_md
+          ? '<a class="dl" href="/eventos/' + uidEnc + '/ver" target="_blank">Ver</a><a class="dl" href="/eventos/' + uidEnc + '/dossier">Descargar .md</a>'
           : '<span class="dl disabled">—</span>';
+        const textoBoton = ev.email_status === 'enviado' ? 'Reenviar correo' : 'Mandar correo';
+        const claseBoton = ev.email_status === 'enviado' ? 'btn-enviar enviado' : 'btn-enviar';
         tr.innerHTML =
           '<td>' + fechaCDMX(ev.start_utc) + '</td>' +
           '<td>' + (ev.institucion || ev.summary || '—') + '</td>' +
@@ -99,8 +107,35 @@ export function paginaDashboard(): string {
           '<td>' + pill(ev.research_status, RESEARCH) + '</td>' +
           '<td>' + pill(ev.email_status, ENVIO) + '</td>' +
           '<td>' + fechaCDMX(ev.enviado_en) + '</td>' +
-          '<td>' + descarga + '</td>';
+          '<td>' + resumen + '</td>' +
+          '<td class="acciones"><button class="' + claseBoton + '" onclick="mandarCorreo(this, \'' + ev.uid.replace(/'/g, "\\'") + '\')">' + textoBoton + '</button></td>';
         cuerpo.appendChild(tr);
+      }
+    }
+
+    async function mandarCorreo(btn, uid) {
+      const destino = (window.__eventos || []).find(e => e.uid === uid);
+      const correo = destino ? destino.destinatario_email : '';
+      if (!confirm('¿Mandar el brief de esta cita ahora mismo a ' + correo + '?')) return;
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Enviando...';
+      try {
+        const r = await fetch('/eventos/' + encodeURIComponent(uid) + '/enviar', { method: 'POST' });
+        const data = await r.json();
+        if (data.ok) {
+          btn.textContent = '✓ Enviado';
+          btn.classList.add('enviado');
+          await cargar();
+        } else {
+          alert('No se pudo enviar: ' + (data.error || 'error desconocido'));
+          btn.textContent = original;
+        }
+      } catch (e) {
+        alert('Error de red al enviar.');
+        btn.textContent = original;
+      } finally {
+        btn.disabled = false;
       }
     }
 

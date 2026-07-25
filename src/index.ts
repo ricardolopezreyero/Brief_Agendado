@@ -1,8 +1,10 @@
 // RLR
 import type { Env } from './types';
 import { pollCalendario, enviarBriefsDelDia } from './scheduled';
-import { listEventos, getEvento, getLogs, insertLog, insertColaborador, listColaboradores } from './db';
+import { listEventos, getEvento, getLogs, insertLog, insertColaborador, listColaboradores, marcarEnviado, marcarErrorEnvio } from './db';
 import { paginaDashboard } from './dashboard';
+import { paginaVerDossier } from './viewer';
+import { enviarBrief } from './email';
 
 // Ricardo López Reyero
 const _k = 'EYE', _rev = 181218;
@@ -99,6 +101,29 @@ export default {
             'Content-Disposition': `attachment; filename="${nombreArchivo}"`,
           },
         });
+      }
+
+      if (method === 'GET' && pathname.startsWith('/eventos/') && pathname.endsWith('/ver')) {
+        const uid = decodeURIComponent(pathname.slice('/eventos/'.length, -'/ver'.length));
+        const evento = await getEvento(env.DB, uid);
+        if (!evento) return html('<p>No encontrado.</p>', 404);
+        return html(paginaVerDossier(evento));
+      }
+
+      if (method === 'POST' && pathname.startsWith('/eventos/') && pathname.endsWith('/enviar')) {
+        const uid = decodeURIComponent(pathname.slice('/eventos/'.length, -'/enviar'.length));
+        const evento = await getEvento(env.DB, uid);
+        if (!evento) return json({ ok: false, error: 'No encontrado' }, 404);
+
+        const resultado = await enviarBrief(env, evento);
+        if (resultado.ok) {
+          await marcarEnviado(env.DB, uid);
+          await insertLog(env.DB, 'INFO', '✓ Brief enviado manualmente desde el dashboard', uid);
+          return json({ ok: true });
+        }
+        await marcarErrorEnvio(env.DB, uid, resultado.error ?? 'error desconocido');
+        await insertLog(env.DB, 'ERROR', `✗ Falló envío manual: ${resultado.error}`, uid);
+        return json({ ok: false, error: resultado.error ?? 'Error desconocido al enviar' }, 500);
       }
 
       if (method === 'POST' && pathname === '/colaboradores') {

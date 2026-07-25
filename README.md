@@ -6,7 +6,7 @@ prospecto (colegio + representante) antes de la reunión y manda un brief por
 correo al comercial dueño de esa cita, el mismo día de la junta, a las 9am
 hora CDMX.
 
-Producción: **https://brief-agendado.noisy-shape-4fc9.workers.dev**
+Producción: **https://brief.superleads.mx**
 
 ## Cómo funciona (arquitectura)
 
@@ -58,9 +58,17 @@ El calendario de Ricardo sigue siendo el original: vive en el secret
 ## Dashboard
 
 `GET /` — histórico completo: institución, representante, a quién se le
-mandó, estado de research/envío y hora de envío, con búsqueda y botón de
-**descargar el dossier en un clic** (`.md`) por fila. Pensado para que
-cualquier comercial pueda entrar y revisar sus briefs pasados.
+mandó, estado de research/envío y hora de envío, con búsqueda. Por cada fila:
+
+- **Ver** — abre `/eventos/:uid/ver`, una página con el dossier completo
+  renderizado (no solo el .md crudo) más un botón para mandar el correo
+  desde ahí mismo.
+- **Descargar .md** — baja el dossier en markdown.
+- **Mandar correo / Reenviar correo** — dispara el envío del brief en el
+  acto (sin esperar a las 9am ni al cron), con confirmación antes de enviar.
+
+Pensado para que cualquier comercial pueda entrar y revisar o reenviar sus
+briefs pasados.
 
 ## Motores usados
 
@@ -108,7 +116,9 @@ wrangler deploy
 
 - **`GET /`** — dashboard visual (ver arriba).
 - **`GET /eventos?limit=50`** — últimas citas detectadas, en JSON.
+- **`GET /eventos/:uid/ver`** — dossier renderizado + botón de envío manual.
 - **`GET /eventos/:uid/dossier`** — descarga el dossier en markdown.
+- **`POST /eventos/:uid/enviar`** — manda el brief de esa cita ahora mismo.
 - **`GET /colaboradores`** — lista de comerciales conectados.
 - **`GET /logs?lines=80`** — logs recientes en JSON.
 - **`POST /probar-poll`** — dispara manualmente el poll de calendarios (sin
@@ -148,7 +158,9 @@ src/
   email.ts         Plantilla HTML/texto del brief + envío por Resend
   db.ts            D1: eventos_rayosx, colaboradores, logs
   scheduled.ts      Orquesta poll de calendarios y envío del día
+  markdown.ts       Render compartido de markdown→HTML (dossier) + fecha CDMX
   dashboard.ts      HTML del dashboard (/)
+  viewer.ts         HTML de /eventos/:uid/ver (dossier + botón de envío)
   index.ts          Router HTTP + cron + formulario /conectar
 migrations/         Esquema D1
 ```

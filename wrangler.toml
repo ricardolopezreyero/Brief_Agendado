@@ -5,8 +5,9 @@ compatibility_flags = ["nodejs_compat"]
 
 account_id = "93695b987a7460c681c06ca4df901ef4"
 
-# Sin dominio propio: solo necesita cron + un par de endpoints de diagnóstico,
-# accesibles vía el subdominio workers.dev por defecto.
+routes = [
+  { pattern = "brief.superleads.mx", custom_domain = true }
+]
 
 [[d1_databases]]
 binding = "DB"
