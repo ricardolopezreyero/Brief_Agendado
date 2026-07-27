@@ -128,6 +128,17 @@ El lápiz ✏️ junto al título abre un formulario con los datos extraídos
   que pisaría las correcciones — ver `regenerarConDatosGuardados()` en
   `src/scheduled.ts`). El dossier nuevo reemplaza al anterior.
 
+Como el research tarda 30-60s, tanto la regeneración como `/manual` muestran
+una **barra de progreso** con etapas ("Buscando información...",
+"Redactando el brief...") que avanza sola hasta 92% y cierra al 100% cuando
+el servidor responde — sin sacar al usuario de la página; al terminar, la
+página se recarga sola con el brief nuevo. La barra avanza por tiempo (el
+Worker no reporta progreso real), pero el cierre al 100% sí es la señal
+real de que terminó.
+
+La página del brief también tiene arriba los botones **Descargar PDF**
+(primario, verde) y **Descargar .md** (secundario), además de los del pie.
+
 ## Motores usados
 
 - **DeepSeek** (`deepseek-v4-flash` para extracción/queries,

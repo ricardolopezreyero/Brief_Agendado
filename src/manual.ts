@@ -21,6 +21,10 @@ ${headAbiertoHtml('Generar brief manual — Brief Agendado')}
   button:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(86,239,159,.28);}
   button:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none;}
   #estado{margin-top:14px;font-size:13.5px;font-weight:600;text-align:center;}
+  #progresoWrap{display:none;margin-top:18px;}
+  #progresoBarra-fondo{height:10px;background:#e0e8f8;border-radius:999px;overflow:hidden;}
+  #progresoBarra{height:100%;width:0%;background:linear-gradient(90deg,#0039C8,#56EF9F);border-radius:999px;transition:width .5s ease;}
+  #progresoTexto{margin-top:8px;font-size:13px;font-weight:600;color:var(--navy);text-align:center;}
 </style>
 </head>
 <body>
@@ -42,24 +46,62 @@ ${headAbiertoHtml('Generar brief manual — Brief Agendado')}
         <input type="email" id="correo" placeholder="Ricardo@SuperLeads.mx">
       </label>
       <button id="btnGenerar">Generar brief</button>
+      <div id="progresoWrap">
+        <div id="progresoBarra-fondo"><div id="progresoBarra"></div></div>
+        <div id="progresoTexto"></div>
+      </div>
       <div id="estado"></div>
     </div>
   </div>
   <script>
+    let progresoTimer = null;
+    function iniciarProgreso() {
+      const wrap = document.getElementById('progresoWrap');
+      const barra = document.getElementById('progresoBarra');
+      const texto = document.getElementById('progresoTexto');
+      wrap.style.display = 'block';
+      let pct = 0;
+      const etapas = [
+        [0, 'Leyendo los datos del prospecto...'],
+        [15, 'Buscando información en internet...'],
+        [45, 'Analizando resultados y cruzando con el ICP...'],
+        [72, 'Redactando el brief...'],
+        [88, 'Casi listo, dando los últimos toques...'],
+      ];
+      const pinta = () => {
+        barra.style.width = pct + '%';
+        let t = etapas[0][1];
+        for (const [lim, txt] of etapas) if (pct >= lim) t = txt;
+        texto.textContent = t + ' ' + Math.round(pct) + '%';
+      };
+      pinta();
+      progresoTimer = setInterval(() => {
+        pct = Math.min(pct + (pct < 30 ? 2.5 : pct < 65 ? 1.2 : 0.4), 92);
+        pinta();
+      }, 500);
+    }
+    function terminarProgreso(ok, mensaje) {
+      clearInterval(progresoTimer);
+      const barra = document.getElementById('progresoBarra');
+      const texto = document.getElementById('progresoTexto');
+      if (ok) { barra.style.width = '100%'; texto.style.color = '#2BC878'; }
+      else { barra.style.background = '#c0392b'; texto.style.color = '#c0392b'; }
+      texto.textContent = mensaje;
+    }
+
     document.getElementById('btnGenerar').addEventListener('click', async () => {
       const btn = document.getElementById('btnGenerar');
-      const estado = document.getElementById('estado');
       const texto = document.getElementById('texto').value.trim();
       const correo = document.getElementById('correo').value.trim();
+      const estado = document.getElementById('estado');
       if (texto.length < 20) {
         estado.style.color = '#c0392b';
         estado.textContent = 'Pega los datos del prospecto primero.';
         return;
       }
       btn.disabled = true;
-      btn.textContent = 'Investigando al prospecto... (puede tardar un minuto)';
-      estado.style.color = '#666';
       estado.textContent = '';
+      iniciarProgreso();
       try {
         const r = await fetch('/manual', {
           method: 'POST',
@@ -68,20 +110,15 @@ ${headAbiertoHtml('Generar brief manual — Brief Agendado')}
         });
         const data = await r.json();
         if (data.ok && data.uid) {
-          estado.style.color = '#2BC878';
-          estado.textContent = '✓ Brief generado, abriendo...';
-          window.location.href = '/eventos/' + encodeURIComponent(data.uid) + '/ver';
+          terminarProgreso(true, '✓ ¡Brief listo! Abriéndolo...');
+          setTimeout(() => { window.location.href = '/eventos/' + encodeURIComponent(data.uid) + '/ver'; }, 900);
         } else {
-          estado.style.color = '#c0392b';
-          estado.textContent = '✗ ' + (data.error || 'No se pudo generar el brief.');
+          terminarProgreso(false, '✗ ' + (data.error || 'No se pudo generar el brief.'));
           btn.disabled = false;
-          btn.textContent = 'Generar brief';
         }
       } catch (e) {
-        estado.style.color = '#c0392b';
-        estado.textContent = '✗ Error de red al generar.';
+        terminarProgreso(false, '✗ Error de red al generar.');
         btn.disabled = false;
-        btn.textContent = 'Generar brief';
       }
     });
   </script>

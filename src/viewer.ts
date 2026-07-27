@@ -74,13 +74,21 @@ export function paginaVerDossier(evento: EventoRecord): string {
     #formEditar input:focus{outline:none;border-color:#0039C8;}
     .form-botones{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
     #estadoEditar{margin-top:10px;font-size:13px;}
+    .top-acciones{display:flex;gap:8px;align-items:center;}
+    #progresoWrap{display:none;margin-top:16px;}
+    #progresoBarra-fondo{height:10px;background:#e0e8f8;border-radius:999px;overflow:hidden;}
+    #progresoBarra{height:100%;width:0%;background:linear-gradient(90deg,#0039C8,#56EF9F);border-radius:999px;transition:width .5s ease;}
+    #progresoTexto{margin-top:8px;font-size:13px;font-weight:600;color:#002582;}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
       <a href="/">← Volver al dashboard</a>
-      <a href="/eventos/${encodeURIComponent(evento.uid)}/dossier">Descargar .md</a>
+      <div class="top-acciones">
+        <button class="btn pdf" onclick="generarPDF(this)">Descargar PDF</button>
+        <a class="btn secondary" href="/eventos/${encodeURIComponent(evento.uid)}/dossier">Descargar .md</a>
+      </div>
     </div>
     <div class="card">
       <p class="eyebrow">Pre-Rayos X de Inscripciones</p>
@@ -100,6 +108,10 @@ export function paginaVerDossier(evento: EventoRecord): string {
         <div class="form-botones">
           <button class="btn secondary" id="btnGuardar">Guardar</button>
           <button class="btn primary" id="btnRegenerar">Guardar y generar nuevo brief</button>
+        </div>
+        <div id="progresoWrap">
+          <div id="progresoBarra-fondo"><div id="progresoBarra"></div></div>
+          <div id="progresoTexto"></div>
         </div>
         <div id="estadoEditar"></div>
       </div>
@@ -327,25 +339,69 @@ export function paginaVerDossier(evento: EventoRecord): string {
       }
     });
 
+    // ── Barra de progreso de la regeneración ──
+    // El research tarda 30-60s; sin esto no se sabe si algo está pasando.
+    // Avanza sola por etapas hasta 92% y llega a 100% cuando el servidor
+    // responde — nunca saca al usuario de la página.
+    let progresoTimer = null;
+    function iniciarProgreso() {
+      const wrap = document.getElementById('progresoWrap');
+      const barra = document.getElementById('progresoBarra');
+      const texto = document.getElementById('progresoTexto');
+      wrap.style.display = 'block';
+      let pct = 0;
+      const etapas = [
+        [0, 'Guardando los datos corregidos...'],
+        [15, 'Buscando información del prospecto en internet...'],
+        [45, 'Analizando resultados y cruzando con el ICP...'],
+        [72, 'Redactando el nuevo brief...'],
+        [88, 'Casi listo, dando los últimos toques...'],
+      ];
+      const pinta = () => {
+        barra.style.width = pct + '%';
+        let t = etapas[0][1];
+        for (const [lim, txt] of etapas) if (pct >= lim) t = txt;
+        texto.textContent = t + ' ' + Math.round(pct) + '%';
+      };
+      pinta();
+      progresoTimer = setInterval(() => {
+        pct = Math.min(pct + (pct < 30 ? 2.5 : pct < 65 ? 1.2 : 0.4), 92);
+        pinta();
+      }, 500);
+    }
+    function terminarProgreso(ok, mensaje) {
+      clearInterval(progresoTimer);
+      const barra = document.getElementById('progresoBarra');
+      const texto = document.getElementById('progresoTexto');
+      if (ok) {
+        barra.style.width = '100%';
+        texto.style.color = '#1e7e34';
+      } else {
+        barra.style.background = '#c0392b';
+        texto.style.color = '#c0392b';
+      }
+      texto.textContent = mensaje;
+    }
+
     document.getElementById('btnRegenerar').addEventListener('click', async () => {
       if (!confirm('Se guardan los datos corregidos y se genera un brief NUEVO con ellos — el anterior se reemplaza. ¿Continuar?')) return;
-      const estado = document.getElementById('estadoEditar');
       const btn = document.getElementById('btnRegenerar');
+      const btnG = document.getElementById('btnGuardar');
       btn.disabled = true;
-      estado.style.color = '#5b6472';
-      estado.textContent = 'Guardando datos y regenerando el brief... (puede tardar un minuto)';
+      btnG.disabled = true;
+      document.getElementById('estadoEditar').textContent = '';
+      iniciarProgreso();
       try {
         await guardarDatos();
         const r = await fetch('/eventos/${encodeURIComponent(evento.uid)}/regenerar', { method: 'POST' });
         const data = await r.json();
         if (!data.ok) throw new Error(data.error || 'No se pudo regenerar');
-        estado.style.color = '#1e7e34';
-        estado.textContent = '✓ Brief regenerado. Recargando...';
-        location.href = '/eventos/${encodeURIComponent(evento.uid)}/ver';
+        terminarProgreso(true, '✓ ¡Brief nuevo listo! Cargándolo...');
+        setTimeout(() => location.replace('/eventos/${encodeURIComponent(evento.uid)}/ver'), 900);
       } catch (e) {
-        estado.style.color = '#c0392b';
-        estado.textContent = '✗ ' + e.message;
+        terminarProgreso(false, '✗ ' + e.message);
         btn.disabled = false;
+        btnG.disabled = false;
       }
     });
 
