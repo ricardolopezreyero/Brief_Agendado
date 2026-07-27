@@ -1,13 +1,14 @@
 // RLR
 import type { Env } from './types';
-import { pollCalendario, enviarBriefsDelDia, descubrirExistentes, investigarEvento } from './scheduled';
+import { pollCalendario, enviarBriefsDelDia, descubrirExistentes, investigarEvento, regenerarConDatosGuardados, generarBriefManual } from './scheduled';
 import {
   listEventos, getEvento, getLogs, insertLog, insertColaborador, listColaboradores,
-  marcarEnviado, marcarErrorEnvio, marcarErrorResearch,
+  marcarEnviado, marcarErrorEnvio, marcarErrorResearch, setEstadoOverride, guardarProspecto,
 } from './db';
 import { paginaDashboard } from './dashboard';
 import { paginaVerDossier } from './viewer';
 import { paginaConectar, paginaConectado } from './conectar';
+import { paginaManual } from './manual';
 import { enviarBrief } from './email';
 
 // Ricardo López Reyero
@@ -53,6 +54,27 @@ export default {
         return html(paginaConectar());
       }
 
+      if (method === 'GET' && pathname === '/manual') {
+        return html(paginaManual());
+      }
+
+      // Genera un brief desde texto pegado a mano (sin cita de calendario)
+      if (method === 'POST' && pathname === '/manual') {
+        const body = await parseCuerpo(request);
+        if (!body.texto || body.texto.trim().length < 20) {
+          return json({ ok: false, error: 'Falta el texto con los datos del prospecto' }, 400);
+        }
+        const email = (body.correo || '').trim() || 'Ricardo@SuperLeads.mx';
+        try {
+          const uid = await generarBriefManual(env, body.texto.trim(), { email, nombre: email.split('@')[0] });
+          return json({ ok: true, uid });
+        } catch (e: any) {
+          const error = e?.message ?? String(e);
+          await insertLog(env.DB, 'ERROR', `✗ Falló brief manual: ${error}`);
+          return json({ ok: false, error }, 500);
+        }
+      }
+
       if (method === 'GET' && pathname.startsWith('/eventos/') && pathname.endsWith('/dossier')) {
         const uid = extraerUid(pathname, '/dossier');
         const evento = await getEvento(env.DB, uid);
@@ -89,6 +111,60 @@ export default {
         await marcarErrorEnvio(env.DB, uid, resultado.error ?? 'error desconocido');
         await insertLog(env.DB, 'ERROR', `✗ Falló envío manual: ${resultado.error}`, uid);
         return json({ ok: false, error: resultado.error ?? 'Error desconocido al enviar' }, 500);
+      }
+
+      // Fija (o alterna) el estado visual 🟢/🔴 de la cita en el dashboard
+      if (method === 'POST' && pathname.startsWith('/eventos/') && pathname.endsWith('/estado')) {
+        const uid = extraerUid(pathname, '/estado');
+        const body = await parseCuerpo(request);
+        if (body.estado !== 'verde' && body.estado !== 'rojo') {
+          return json({ ok: false, error: 'estado debe ser "verde" o "rojo"' }, 400);
+        }
+        const evento = await getEvento(env.DB, uid);
+        if (!evento) return json({ ok: false, error: 'No encontrado' }, 404);
+        await setEstadoOverride(env.DB, uid, body.estado);
+        return json({ ok: true });
+      }
+
+      // Guarda los datos del prospecto corregidos a mano (lápiz en /ver)
+      if (method === 'POST' && pathname.startsWith('/eventos/') && pathname.endsWith('/datos')) {
+        const uid = extraerUid(pathname, '/datos');
+        const evento = await getEvento(env.DB, uid);
+        if (!evento) return json({ ok: false, error: 'No encontrado' }, 404);
+
+        const body = await parseCuerpo(request);
+        await guardarProspecto(env.DB, uid, {
+          institucion: body.institucion ?? evento.institucion ?? '',
+          web: body.web ?? evento.web ?? '',
+          representante_nombre: body.representante_nombre ?? evento.representante_nombre ?? '',
+          representante_telefono: body.representante_telefono ?? evento.representante_telefono ?? '',
+          representante_correo: body.representante_correo ?? evento.representante_correo ?? '',
+          representante_whatsapp: body.representante_whatsapp ?? evento.representante_whatsapp ?? '',
+          asesor_superleads: evento.asesor_superleads ?? '',
+          zoom_link: evento.zoom_link ?? '',
+          sl_comercial_link: evento.sl_comercial_link ?? '',
+          fecha_hora_reunion: '',
+        });
+        await insertLog(env.DB, 'INFO', '✎ Datos del prospecto editados a mano', uid);
+        return json({ ok: true });
+      }
+
+      // Regenera el dossier con los datos guardados (editados) — reemplaza al anterior
+      if (method === 'POST' && pathname.startsWith('/eventos/') && pathname.endsWith('/regenerar')) {
+        const uid = extraerUid(pathname, '/regenerar');
+        const evento = await getEvento(env.DB, uid);
+        if (!evento) return json({ ok: false, error: 'No encontrado' }, 404);
+
+        try {
+          await regenerarConDatosGuardados(env, evento);
+          await insertLog(env.DB, 'INFO', '↻ Dossier regenerado con datos editados', uid);
+          return json({ ok: true });
+        } catch (e: any) {
+          const error = e?.message ?? String(e);
+          await marcarErrorResearch(env.DB, uid, error);
+          await insertLog(env.DB, 'ERROR', `✗ Falló regeneración: ${error}`, uid);
+          return json({ ok: false, error }, 500);
+        }
       }
 
       // Dispara la investigación de una cita que quedó en estado 'manual'

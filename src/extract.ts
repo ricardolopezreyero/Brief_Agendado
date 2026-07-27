@@ -16,8 +16,11 @@ Responde SIEMPRE con un único objeto JSON, sin texto adicional, con esta forma 
   "representante_whatsapp": "",
   "asesor_superleads": "",
   "zoom_link": "",
-  "sl_comercial_link": ""
-}`;
+  "sl_comercial_link": "",
+  "fecha_hora_reunion": ""
+}
+
+"fecha_hora_reunion": si la descripción menciona el día y la hora de la reunión (p.ej. "Día y hora: martes, 21 de julio de 2026 11:30"), conviértelo a formato "YYYY-MM-DDTHH:MM" (hora local tal cual aparece, sin zona horaria). Si no aparece, "".`;
 
 export async function extraerProspecto(apiKey: string, summary: string, descripcion: string): Promise<ProspectoExtraido> {
   const user = `Título del evento: ${summary}\n\nDescripción:\n${descripcion}`;
@@ -40,5 +43,6 @@ export async function extraerProspecto(apiKey: string, summary: string, descripc
     asesor_superleads: parsed.asesor_superleads ?? '',
     zoom_link: parsed.zoom_link ?? '',
     sl_comercial_link: parsed.sl_comercial_link ?? '',
+    fecha_hora_reunion: parsed.fecha_hora_reunion ?? '',
   };
 }

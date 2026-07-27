@@ -70,6 +70,10 @@ export async function guardarProspecto(db: D1Database, uid: string, p: Prospecto
   ).run();
 }
 
+export async function setEstadoOverride(db: D1Database, uid: string, estado: 'verde' | 'rojo' | null): Promise<void> {
+  await db.prepare('UPDATE eventos_rayosx SET estado_override = ? WHERE uid = ?').bind(estado, uid).run();
+}
+
 export async function guardarDossier(db: D1Database, uid: string, dossierMd: string): Promise<void> {
   await db.prepare(`
     UPDATE eventos_rayosx SET dossier_md = ?, research_status = 'listo', research_error = NULL, investigado_en = ?

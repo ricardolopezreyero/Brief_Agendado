@@ -11,6 +11,16 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
   .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
   .toolbar input{padding:10px 14px;border:.5px solid var(--border);border-radius:8px;font-size:13.5px;font-family:inherit;min-width:260px;background:#fff;}
   .toolbar input:focus{outline:none;border-color:var(--blue);}
+  .toolbar a.btn-manual{margin-left:auto;padding:10px 16px;border-radius:8px;background:var(--green);color:var(--navy);text-decoration:none;font-size:13px;font-weight:700;}
+  .toolbar a.btn-manual:hover{background:var(--green-d);}
+
+  .chips{display:flex;gap:8px;}
+  .chip{border:.5px solid var(--border);background:#fff;border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;}
+  .chip.activo{border-color:var(--navy);background:var(--navy);color:#fff;}
+
+  .btn-estado{border:none;background:none;font-size:15px;cursor:pointer;padding:2px;line-height:1;}
+  .btn-lapiz{color:var(--dim);text-decoration:none;font-size:13px;margin-left:6px;}
+  .btn-lapiz:hover{color:var(--blue);}
 
   .card{background:#fff;border:.5px solid var(--border);border-radius:12px;overflow:auto;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -46,11 +56,18 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
   <div class="wrap ancho">
     <div class="toolbar">
       <input id="buscar" type="text" placeholder="Buscar por institución, representante o correo...">
+      <div class="chips">
+        <button class="chip activo" data-filtro="todos">Todos</button>
+        <button class="chip" data-filtro="verde">🟢 Próximos</button>
+        <button class="chip" data-filtro="rojo">🔴 Pasados</button>
+      </div>
+      <a class="btn-manual" href="/manual">＋ Generar brief manual</a>
     </div>
     <div class="card">
       <table id="tabla">
         <thead>
           <tr>
+            <th></th>
             <th>Reunión (CDMX)</th>
             <th>Institución</th>
             <th>Representante</th>
@@ -81,11 +98,32 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
     const RESEARCH = { pendiente: {clase:'pend', texto:'pendiente'}, manual: {clase:'pend', texto:'sin generar'}, listo: {clase:'ok', texto:'listo'}, error: {clase:'err', texto:'error'} };
     const ENVIO = { pendiente: {clase:'pend', texto:'pendiente'}, enviado: {clase:'ok', texto:'enviado'}, error: {clase:'err', texto:'error'} };
 
+    // 🟢 = cita futura, 🔴 = cita pasada — automático por fecha, salvo que el
+    // usuario lo haya fijado a mano (estado_override).
+    let filtroEstado = 'todos';
+    function estadoDe(ev) {
+      if (ev.estado_override === 'verde' || ev.estado_override === 'rojo') return ev.estado_override;
+      return new Date(ev.start_utc).getTime() >= Date.now() ? 'verde' : 'rojo';
+    }
+
     async function cargar() {
       const r = await fetch('/eventos?limit=300');
       const { eventos } = await r.json();
       window.__eventos = eventos;
-      pintar(eventos);
+      aplicarFiltros();
+    }
+
+    function aplicarFiltros() {
+      const q = document.getElementById('buscar').value.toLowerCase();
+      let lista = window.__eventos || [];
+      if (filtroEstado !== 'todos') lista = lista.filter(ev => estadoDe(ev) === filtroEstado);
+      if (q) {
+        lista = lista.filter(ev =>
+          [ev.institucion, ev.representante_nombre, ev.representante_correo, ev.destinatario_nombre, ev.destinatario_email, ev.summary]
+            .filter(Boolean).some(v => v.toLowerCase().includes(q))
+        );
+      }
+      pintar(lista);
     }
 
     // Nota: las filas se arman con appendChild/addEventListener (no con
@@ -102,14 +140,46 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
         const tr = document.createElement('tr');
         const uidEnc = encodeURIComponent(ev.uid);
 
-        tr.innerHTML =
-          '<td>' + fechaCDMX(ev.start_utc) + '</td>' +
-          '<td>' + (ev.institucion || ev.summary || '—') + '</td>' +
-          '<td>' + (ev.representante_nombre || '—') + '<div class="muted">' + (ev.representante_correo || '') + '</div></td>' +
+        // Primera celda: 🟢/🔴 clickeable para cambiarlo a mano
+        const tdEstado = document.createElement('td');
+        const btnEstado = document.createElement('button');
+        btnEstado.className = 'btn-estado';
+        const est = estadoDe(ev);
+        btnEstado.textContent = est === 'verde' ? '🟢' : '🔴';
+        btnEstado.title = est === 'verde' ? 'Próxima — clic para marcar como pasada' : 'Pasada — clic para marcar como próxima';
+        btnEstado.addEventListener('click', () => cambiarEstado(btnEstado, ev));
+        tdEstado.appendChild(btnEstado);
+        tr.appendChild(tdEstado);
+
+        const tdInfo = document.createElement('td');
+        tdInfo.innerHTML = fechaCDMX(ev.start_utc);
+        tr.appendChild(tdInfo);
+
+        const tdInst = document.createElement('td');
+        tdInst.textContent = ev.institucion || ev.summary || '—';
+        tr.appendChild(tdInst);
+
+        const tdRep = document.createElement('td');
+        tdRep.innerHTML = (ev.representante_nombre || '—') + '<div class="muted">' + (ev.representante_correo || '') + '</div>';
+        if (ev.dossier_md || ev.institucion) {
+          const lapiz = document.createElement('a');
+          lapiz.className = 'btn-lapiz';
+          lapiz.href = '/eventos/' + uidEnc + '/ver?editar=1';
+          lapiz.target = '_blank';
+          lapiz.title = 'Editar datos del prospecto';
+          lapiz.textContent = '✏️';
+          tdRep.firstChild ? tdRep.insertBefore(lapiz, tdRep.querySelector('.muted')) : tdRep.appendChild(lapiz);
+        }
+        tr.appendChild(tdRep);
+
+        const restoHtml =
           '<td>' + (ev.destinatario_nombre || '—') + '<div class="muted">' + (ev.destinatario_email || '') + '</div></td>' +
           '<td>' + pill(ev.research_status, RESEARCH) + '</td>' +
           '<td>' + pill(ev.email_status, ENVIO) + '</td>' +
           '<td>' + fechaCDMX(ev.enviado_en) + '</td>';
+        const tmp = document.createElement('template');
+        tmp.innerHTML = restoHtml;
+        tr.append(...tmp.content.children);
 
         const tdResumen = document.createElement('td');
         if (ev.dossier_md) {
@@ -191,13 +261,37 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
       }
     }
 
-    document.getElementById('buscar').addEventListener('input', e => {
-      const q = e.target.value.toLowerCase();
-      const filtrados = (window.__eventos || []).filter(ev =>
-        [ev.institucion, ev.representante_nombre, ev.representante_correo, ev.destinatario_nombre, ev.destinatario_email, ev.summary]
-          .filter(Boolean).some(v => v.toLowerCase().includes(q))
-      );
-      pintar(filtrados);
+    async function cambiarEstado(btn, ev) {
+      const nuevo = estadoDe(ev) === 'verde' ? 'rojo' : 'verde';
+      btn.disabled = true;
+      try {
+        const r = await fetch('/eventos/' + encodeURIComponent(ev.uid) + '/estado', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: nuevo }),
+        });
+        const data = await r.json();
+        if (data.ok) {
+          ev.estado_override = nuevo;
+          aplicarFiltros();
+        } else {
+          alert('No se pudo cambiar el estado: ' + (data.error || 'error desconocido'));
+        }
+      } catch (e) {
+        alert('Error de red al cambiar el estado.');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('buscar').addEventListener('input', aplicarFiltros);
+
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        filtroEstado = chip.dataset.filtro;
+        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('activo', c === chip));
+        aplicarFiltros();
+      });
     });
 
     cargar();

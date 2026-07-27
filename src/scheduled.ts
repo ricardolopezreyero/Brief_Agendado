@@ -38,6 +38,53 @@ export async function investigarEvento(env: Env, uid: string, summary: string, d
   await guardarDossier(env.DB, uid, dossier);
 }
 
+// Regenera el dossier usando los datos YA guardados del prospecto (p.ej.
+// después de que el usuario los corrigió a mano) — a diferencia de
+// investigarEvento, NO vuelve a extraer de la descripción, porque eso
+// pisaría las correcciones. El dossier nuevo reemplaza al anterior.
+export async function regenerarConDatosGuardados(env: Env, evento: EventoRecord): Promise<void> {
+  const prospecto = {
+    institucion: evento.institucion ?? '',
+    web: evento.web ?? '',
+    representante_nombre: evento.representante_nombre ?? '',
+    representante_telefono: evento.representante_telefono ?? '',
+    representante_correo: evento.representante_correo ?? '',
+    representante_whatsapp: evento.representante_whatsapp ?? '',
+    asesor_superleads: evento.asesor_superleads ?? '',
+    zoom_link: evento.zoom_link ?? '',
+    sl_comercial_link: evento.sl_comercial_link ?? '',
+    fecha_hora_reunion: '',
+  };
+  const dossier = await ejecutarResearch(env.DEEPSEEK_API_KEY, env.BRAVE_API_KEY, prospecto);
+  await guardarDossier(env.DB, evento.uid, dossier);
+}
+
+// Genera un brief desde texto pegado a mano (página /manual) — para cuando
+// alguien capturó mal los datos en el calendario y hay que rehacer el brief
+// con la información correcta, sin esperar a ninguna cita.
+export async function generarBriefManual(env: Env, texto: string, destinatario: { email: string; nombre: string }): Promise<string> {
+  const uid = `manual-${Date.now()}`;
+  const prospecto = await extraerProspecto(env.DEEPSEEK_API_KEY, 'Brief manual | Rayos X', texto);
+
+  // Si el texto trae la fecha de la reunión, se usa (hora CDMX → UTC con
+  // offset fijo -6); si no, se fecha al momento de generarlo.
+  let startUtc = new Date().toISOString();
+  const m = prospecto.fecha_hora_reunion.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (m) {
+    startUtc = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + 6, +m[5])).toISOString();
+  }
+
+  const summary = `${prospecto.institucion || prospecto.representante_nombre || 'Prospecto'} | Rayos X (manual)`;
+  await insertEventoBase(env.DB, { uid, summary, startUtc, descriptionRaw: texto }, { email: destinatario.email, nombre: destinatario.nombre, colaboradorId: null });
+  await guardarProspecto(env.DB, uid, prospecto);
+  await insertLog(env.DB, 'INFO', `▶ Brief manual solicitado: ${summary}`, uid);
+
+  const dossier = await ejecutarResearch(env.DEEPSEEK_API_KEY, env.BRAVE_API_KEY, prospecto);
+  await guardarDossier(env.DB, uid, dossier);
+  await insertLog(env.DB, 'INFO', '✓ Dossier manual listo', uid);
+  return uid;
+}
+
 // Se corre una sola vez, justo al conectar un colaborador: guarda (sin
 // investigar) las citas "Rayos X" que ya estaban agendadas en su calendario,
 // para que las dispare manualmente desde /conectar o el dashboard. De ahí en

@@ -41,6 +41,10 @@ export interface ProspectoExtraido {
   asesor_superleads: string;
   zoom_link: string;
   sl_comercial_link: string;
+  // Hora local CDMX de la reunión si aparece en el texto ("YYYY-MM-DDTHH:MM"),
+  // "" si no. Solo la usa el flujo de generación manual (/manual) para fechar
+  // el evento; el flujo de calendario ya trae DTSTART del ICS.
+  fecha_hora_reunion: string;
 }
 
 export interface EventoRecord {
@@ -65,6 +69,7 @@ export interface EventoRecord {
   research_error: string | null;
   email_status: 'pendiente' | 'enviado' | 'error' | 'sin_dossier';
   email_error: string | null;
+  estado_override: 'verde' | 'rojo' | null;
   creado_en: string;
   investigado_en: string | null;
   enviado_en: string | null;

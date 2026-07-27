@@ -65,6 +65,15 @@ export function paginaVerDossier(evento: EventoRecord): string {
     .btn:disabled{opacity:.6;cursor:default;}
     #estadoEnvio{margin-top:10px;font-size:13px;}
     #estadoPdf{margin-top:10px;font-size:13px;}
+    .titulo-linea{display:flex;align-items:center;gap:10px;}
+    .btn-lapiz{border:none;background:none;font-size:16px;cursor:pointer;padding:2px;line-height:1;}
+    #formEditar{display:none;background:#F4F7FF;border:.5px solid #e0e8f8;border-radius:10px;padding:20px;margin:0 0 24px;}
+    #formEditar label{display:block;font-size:12px;font-weight:600;color:#002582;margin:12px 0 4px;}
+    #formEditar label:first-of-type{margin-top:0;}
+    #formEditar input{width:100%;box-sizing:border-box;padding:9px 12px;border:.5px solid #e0e8f8;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;}
+    #formEditar input:focus{outline:none;border-color:#0039C8;}
+    .form-botones{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+    #estadoEditar{margin-top:10px;font-size:13px;}
   </style>
 </head>
 <body>
@@ -75,8 +84,26 @@ export function paginaVerDossier(evento: EventoRecord): string {
     </div>
     <div class="card">
       <p class="eyebrow">Pre-Rayos X de Inscripciones</p>
-      <h1>${escapeHtml(tituloBrief)}</h1>
+      <div class="titulo-linea">
+        <h1>${escapeHtml(tituloBrief)}</h1>
+        <button class="btn-lapiz" id="btnLapiz" title="Editar datos del prospecto">✏️</button>
+      </div>
       <p class="fecha">${fecha}</p>
+
+      <div id="formEditar">
+        <label>Institución<input id="e_institucion" value="${escapeHtml(evento.institucion || '')}"></label>
+        <label>Web<input id="e_web" value="${escapeHtml(evento.web || '')}"></label>
+        <label>Nombre del representante<input id="e_nombre" value="${escapeHtml(evento.representante_nombre || '')}"></label>
+        <label>Teléfono<input id="e_telefono" value="${escapeHtml(evento.representante_telefono || '')}"></label>
+        <label>Correo<input id="e_correo" value="${escapeHtml(evento.representante_correo || '')}"></label>
+        <label>WhatsApp<input id="e_whatsapp" value="${escapeHtml(evento.representante_whatsapp || '')}"></label>
+        <div class="form-botones">
+          <button class="btn secondary" id="btnGuardar">Guardar</button>
+          <button class="btn primary" id="btnRegenerar">Guardar y generar nuevo brief</button>
+        </div>
+        <div id="estadoEditar"></div>
+      </div>
+
       <table>${datos}</table>
       <div id="dossierBody">${cuerpo}</div>
 
@@ -258,10 +285,78 @@ export function paginaVerDossier(evento: EventoRecord): string {
       }
     }
 
+    // ── Edición de datos del prospecto ──
+    const formEditar = document.getElementById('formEditar');
+    document.getElementById('btnLapiz').addEventListener('click', () => {
+      formEditar.style.display = formEditar.style.display === 'block' ? 'none' : 'block';
+    });
+
+    function datosEditados() {
+      return {
+        institucion: document.getElementById('e_institucion').value.trim(),
+        web: document.getElementById('e_web').value.trim(),
+        representante_nombre: document.getElementById('e_nombre').value.trim(),
+        representante_telefono: document.getElementById('e_telefono').value.trim(),
+        representante_correo: document.getElementById('e_correo').value.trim(),
+        representante_whatsapp: document.getElementById('e_whatsapp').value.trim(),
+      };
+    }
+
+    async function guardarDatos() {
+      const r = await fetch('/eventos/${encodeURIComponent(evento.uid)}/datos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosEditados()),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error || 'No se pudo guardar');
+    }
+
+    document.getElementById('btnGuardar').addEventListener('click', async () => {
+      const estado = document.getElementById('estadoEditar');
+      estado.style.color = '#5b6472';
+      estado.textContent = 'Guardando...';
+      try {
+        await guardarDatos();
+        estado.style.color = '#1e7e34';
+        estado.textContent = '✓ Datos guardados. Recargando...';
+        location.href = '/eventos/${encodeURIComponent(evento.uid)}/ver';
+      } catch (e) {
+        estado.style.color = '#c0392b';
+        estado.textContent = '✗ ' + e.message;
+      }
+    });
+
+    document.getElementById('btnRegenerar').addEventListener('click', async () => {
+      if (!confirm('Se guardan los datos corregidos y se genera un brief NUEVO con ellos — el anterior se reemplaza. ¿Continuar?')) return;
+      const estado = document.getElementById('estadoEditar');
+      const btn = document.getElementById('btnRegenerar');
+      btn.disabled = true;
+      estado.style.color = '#5b6472';
+      estado.textContent = 'Guardando datos y regenerando el brief... (puede tardar un minuto)';
+      try {
+        await guardarDatos();
+        const r = await fetch('/eventos/${encodeURIComponent(evento.uid)}/regenerar', { method: 'POST' });
+        const data = await r.json();
+        if (!data.ok) throw new Error(data.error || 'No se pudo regenerar');
+        estado.style.color = '#1e7e34';
+        estado.textContent = '✓ Brief regenerado. Recargando...';
+        location.href = '/eventos/${encodeURIComponent(evento.uid)}/ver';
+      } catch (e) {
+        estado.style.color = '#c0392b';
+        estado.textContent = '✗ ' + e.message;
+        btn.disabled = false;
+      }
+    });
+
     // Permite disparar la descarga desde otra pantalla (el dashboard) sin
     // tener que entrar aquí y darle clic de nuevo: /ver?descargar=pdf
     if (new URLSearchParams(location.search).get('descargar') === 'pdf') {
       window.addEventListener('load', () => generarPDF(document.getElementById('btnPdf')));
+    }
+    // ...y abrir el formulario de edición directo desde el lápiz del dashboard
+    if (new URLSearchParams(location.search).get('editar') === '1') {
+      formEditar.style.display = 'block';
     }
   </script>
 </body>

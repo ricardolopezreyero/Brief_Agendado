@@ -96,9 +96,37 @@ compartido con `/conectar` y `/eventos/:uid/ver`). Por cada fila:
   timestamp: `brief-<institución>-AAAA_MM_DD-HH_MM.pdf`.
 - **Mandar correo / Reenviar correo** — dispara el envío del brief en el
   acto (sin esperar a las 9am ni al cron), con confirmación antes de enviar.
+- **🟢/🔴 (primera columna)** — estado de la cita: verde = próxima, rojo = ya
+  pasó. Se calcula solo por la fecha, pero un clic sobre el círculo lo
+  cambia a mano (queda guardado en `estado_override`). Los chips de arriba
+  (Todos / 🟢 Próximos / 🔴 Pasados) filtran con un clic, combinables con el
+  buscador.
+- **✏️ (junto al representante)** — abre `/eventos/:uid/ver?editar=1` con el
+  formulario de edición ya desplegado.
 
 Pensado para que cualquier comercial pueda entrar y revisar o reenviar sus
 briefs pasados.
+
+## Brief manual (`/manual`)
+
+Botón "＋ Generar brief manual" en el dashboard. Para cuando alguien capturó
+mal los datos en el calendario y hay que rehacer el brief: se pega el texto
+con los datos del prospecto (la descripción completa de la cita, o
+corregida), se elige a qué correo mandar el brief (default Ricardo), y se
+genera al momento — extracción con DeepSeek (incluida la fecha de la
+reunión si viene en el texto, para fechar el evento) + research completo.
+El evento queda en el histórico con uid `manual-<timestamp>`.
+
+## Editar datos y regenerar (`/eventos/:uid/ver`)
+
+El lápiz ✏️ junto al título abre un formulario con los datos extraídos
+(institución, web, nombre, teléfono, correo, WhatsApp). Dos opciones:
+
+- **Guardar** — solo corrige los datos guardados.
+- **Guardar y generar nuevo brief** — guarda y corre el research otra vez
+  usando los datos corregidos (SIN re-extraer de la descripción original,
+  que pisaría las correcciones — ver `regenerarConDatosGuardados()` en
+  `src/scheduled.ts`). El dossier nuevo reemplaza al anterior.
 
 ## Motores usados
 
@@ -149,6 +177,11 @@ wrangler deploy
 - **`POST /eventos/:uid/enviar`** — manda el brief de esa cita ahora mismo.
 - **`POST /eventos/:uid/investigar`** — genera el dossier de una cita en
   estado `manual` (backlog al conectar) o reintenta una que falló.
+- **`POST /eventos/:uid/estado`** — fija el estado 🟢/🔴 a mano (`{estado}`).
+- **`POST /eventos/:uid/datos`** — guarda los datos del prospecto corregidos.
+- **`POST /eventos/:uid/regenerar`** — regenera el dossier con los datos
+  guardados (sin re-extraer), reemplazando al anterior.
+- **`GET|POST /manual`** — página y endpoint de brief manual desde texto.
 - **`GET /colaboradores`** — lista de comerciales conectados.
 - **`GET /logs?lines=80`** — logs recientes en JSON.
 - **`POST /probar-poll`** — dispara manualmente el poll de calendarios (sin
