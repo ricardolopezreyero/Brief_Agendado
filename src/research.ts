@@ -73,6 +73,9 @@ Una red social por línea, SIEMPRE como bullet de markdown (empieza con "- "), n
 ## El representante
 (rol, lo que se sabe de su trayectoria/actividad pública si algo se encontró; si no hay nada, decirlo)
 
+## Reputación digital
+Lo que un padre de familia o un alumno ve al googlear la institución. Si en los resultados aparecen calificaciones (estrellas de Google/Facebook) o reseñas, repórtalas así: primero la calificación global con fuente; luego hasta 3 señales positivas y hasta 3 señales críticas, cada una en un bullet con su fuente. Las críticas parafraséalas en tono profesional y factual (nunca copies insultos ni acusaciones literales — describe el patrón: p.ej. "quejas por falta de claridad en costos adicionales"). Si no se encontró nada, escribe "No se encontraron reseñas públicas relevantes". Este es de los insumos más accionables del brief: un patrón de quejas es un dolor que SuperLeads puede citar con tacto en la reunión.
+
 ## Cruce con el ICP de SuperLeads
 (triggers detectados, dolor inferido, banderas amarillas si las hay)
 
@@ -108,11 +111,18 @@ Teléfono: ${p.representante_telefono || '(desconocido)'}`;
   return [base, `${base} colegio privado`, `${base} admisiones`, `${p.representante_nombre} ${base}`].filter(Boolean);
 }
 
-// Se agrega siempre, además de las que diseñe DeepSeek — el número de
-// seguidores casi nunca aparece en el propio sitio, hay que buscarlo aparte.
-function querySeguidores(p: ProspectoExtraido): string | null {
+// Se agregan siempre, además de las que diseñe DeepSeek — ni el número de
+// seguidores ni las reseñas aparecen en el propio sitio, hay que buscarlos
+// aparte. TikTok y LinkedIn van explícitos en la query de seguidores: más de
+// una institución tiene su audiencia más grande ahí y no en FB/IG (caso real:
+// un prospecto con ~1.3K en Instagram y 116K en TikTok).
+function queriesFijas(p: ProspectoExtraido): string[] {
   const base = p.institucion || p.web;
-  return base ? `${base} seguidores Facebook Instagram` : null;
+  if (!base) return [];
+  return [
+    `${base} seguidores Facebook Instagram TikTok LinkedIn`,
+    `${base} reseñas opiniones Google`,
+  ];
 }
 
 export async function buscarBrave(braveKey: string, query: string): Promise<FuenteResultado[]> {
@@ -144,8 +154,7 @@ export async function ejecutarResearch(deepseekKey: string, braveKey: string, p:
     extraerRedesSociales(p.web),
   ]);
 
-  const seguidores = querySeguidores(p);
-  const queries = seguidores ? [...queriesGeneradas, seguidores] : queriesGeneradas;
+  const queries = [...queriesGeneradas, ...queriesFijas(p)];
 
   const resultadosPorQuery = await Promise.all(queries.map(async q => ({
     query: q,

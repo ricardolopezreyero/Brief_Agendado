@@ -1,6 +1,8 @@
 // RLR
 import type { EventoRecord } from './types';
 import { escapeHtml, dossierToHtml, fechaLegibleCDMX, LOGO_SUPERLEADS } from './markdown';
+import { footerHtml, ESTILOS_FOOTER } from './branding';
+import { esElegibleVcf, nombreArchivoVcf } from './vcard';
 
 function fila(etiqueta: string, valor: string | null): string {
   if (!valor) return '';
@@ -79,6 +81,21 @@ export function paginaVerDossier(evento: EventoRecord): string {
     #progresoBarra-fondo{height:10px;background:#e0e8f8;border-radius:999px;overflow:hidden;}
     #progresoBarra{height:100%;width:0%;background:linear-gradient(90deg,#0039C8,#56EF9F);border-radius:999px;transition:width .5s ease;}
     #progresoTexto{margin-top:8px;font-size:13px;font-weight:600;color:#002582;}
+    .btn.vcf{background:#56EF9F;color:#001240;}
+    /* Links largos (Zoom, CRM, fuentes del dossier) nunca desbordan el ancho */
+    .card a{word-break:break-all;overflow-wrap:anywhere;}
+    #dossierBody{overflow-wrap:anywhere;}
+    @media(max-width:600px){
+      .wrap{padding:20px 12px 48px;}
+      .card{padding:22px 16px;}
+      .top{flex-wrap:wrap;gap:10px;}
+      /* La tabla de datos se apila: etiqueta arriba, valor abajo, sin scroll lateral */
+      .card > table, .card > table tbody, .card > table tr, .card > table td{display:block;width:100%;}
+      .card > table td{padding:1px 0 !important;white-space:normal !important;}
+      .card > table tr{padding:5px 0;}
+      .acciones .btn{flex:1 1 auto;text-align:center;justify-content:center;}
+    }
+    ${ESTILOS_FOOTER}
   </style>
 </head>
 <body>
@@ -122,12 +139,14 @@ export function paginaVerDossier(evento: EventoRecord): string {
       <div class="acciones">
         <button class="btn primary" id="btnEnviar" data-correo="${escapeHtml(evento.destinatario_email || '')}" onclick="mandarCorreo(this)">Mandar correo con este resumen</button>
         <button class="btn pdf" id="btnPdf" onclick="generarPDF(this)">Descargar PDF</button>
+        ${esElegibleVcf(evento) ? `<a class="btn vcf" href="/eventos/${encodeURIComponent(evento.uid)}/vcard" download="${escapeHtml(nombreArchivoVcf(evento))}">👤 Guardar contacto</a>` : ''}
         <a class="btn secondary" href="/eventos/${encodeURIComponent(evento.uid)}/dossier">Descargar .md</a>
       </div>
       <div id="estadoEnvio"></div>
       <div id="estadoPdf"></div>
     </div>
   </div>
+  ${footerHtml()}
 
   <!-- Plantilla oculta, con estilo SuperLeads, que se captura para armar el PDF -->
   <div id="pdfTarget" style="position:fixed;left:-99999px;top:0;width:794px;background:#fff;font-family:'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;">

@@ -3,6 +3,18 @@ import type { Env, EventoRecord } from './types';
 import { escapeHtml, dossierToHtml, fechaLegibleCDMX } from './markdown';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
+
+// true si la junta cae en el día natural de HOY en CDMX (offset fijo -6).
+// El brief normalmente sale el día de la junta, pero también se puede
+// (re)enviar días después desde el dashboard — en ese caso decir "hoy"
+// sería incorrecto.
+function esHoyCDMX(startUtcIso: string): boolean {
+  const evento = new Date(new Date(startUtcIso).getTime() - 6 * 60 * 60 * 1000);
+  const ahora = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  return evento.getUTCFullYear() === ahora.getUTCFullYear()
+    && evento.getUTCMonth() === ahora.getUTCMonth()
+    && evento.getUTCDate() === ahora.getUTCDate();
+}
 const DEFAULT_TO = 'Ricardo@SuperLeads.mx';
 const FROM = 'Brief Agendado — SuperLeads <brief@superleads.mx>';
 
@@ -42,7 +54,7 @@ function buildHtml(evento: EventoRecord): string {
             <td style="padding:32px 32px 8px;">
               <p style="margin:0 0 4px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#3457d5;">Brief antes de tu reunión — Pre-Rayos X de Inscripciones</p>
               <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#1a2b4c;">${escapeHtml(evento.institucion || evento.summary)}</p>
-              <p style="margin:0 0 20px;font-size:13px;color:#9aa2b1;">Hoy, ${fecha}</p>
+              <p style="margin:0 0 20px;font-size:13px;color:#9aa2b1;">${esHoyCDMX(evento.start_utc) ? 'Hoy, ' : ''}${fecha}</p>
               <table role="presentation" style="margin:0 0 20px;">
                 ${datosHtml}
               </table>
@@ -68,7 +80,7 @@ function buildText(evento: EventoRecord): string {
   const fecha = fechaLegibleCDMX(evento.start_utc);
   const partes = [
     `Brief antes de tu reunión — ${evento.institucion || evento.summary}`,
-    `Hoy, ${fecha}`,
+    `${esHoyCDMX(evento.start_utc) ? 'Hoy, ' : ''}${fecha}`,
     '',
     `Representante: ${evento.representante_nombre || '—'}`,
     `Teléfono: ${evento.representante_telefono || '—'}`,
@@ -100,7 +112,10 @@ async function llamarResend(env: Env, body: Record<string, unknown>): Promise<{ 
 
 export async function enviarBrief(env: Env, evento: EventoRecord): Promise<{ ok: boolean; id?: string; error?: string }> {
   const to = evento.destinatario_email || env.BRIEF_TO_EMAIL || DEFAULT_TO;
-  const subject = `🔍 Brief: ${evento.institucion || evento.summary} — hoy ${evento.representante_nombre ? `con ${evento.representante_nombre}` : ''}`.trim();
+  const cuando = esHoyCDMX(evento.start_utc) ? 'hoy' : '';
+  const con = evento.representante_nombre ? `con ${evento.representante_nombre}` : '';
+  const sufijo = [cuando, con].filter(Boolean).join(' ');
+  const subject = `🔍 Brief: ${evento.institucion || evento.summary}${sufijo ? ` — ${sufijo}` : ''}`;
 
   return llamarResend(env, {
     from: FROM,

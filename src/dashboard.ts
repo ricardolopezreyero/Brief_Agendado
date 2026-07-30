@@ -1,5 +1,5 @@
 // RLR
-import { headAbiertoHtml, heroHeader, ESTILOS_SUPERLEADS } from './branding';
+import { headAbiertoHtml, heroHeader, footerHtml, ESTILOS_SUPERLEADS } from './branding';
 
 export function paginaDashboard(): string {
   return `<!doctype html>
@@ -33,16 +33,44 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
   .pill.pend{background:#fff4e0;color:#a86400;}
   .pill.err{background:#fdecea;color:#c0392b;}
 
-  .dl{color:var(--blue);text-decoration:none;font-weight:700;margin-right:10px;}
-  .dl:hover{text-decoration:underline;}
-  .dl.disabled{color:#c3c8d1;pointer-events:none;}
-  .acciones{white-space:nowrap;}
-  .btn-enviar{border:none;background:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;padding:0;font-family:inherit;}
-  .btn-enviar:hover{text-decoration:underline;}
-  .btn-enviar:disabled{color:#c3c8d1;cursor:default;}
-  .btn-enviar.enviado{color:var(--green-d);}
+  /* Acciones como botones reales (chips), no como texto subrayado — se
+     agrupan en una fila que puede pasar a doble línea si no cabe (flex-wrap),
+     tanto en la columna "Resumen" como en "Acciones". */
+  .botones{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .dl{display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:7px;background:var(--blue-softer);color:var(--blue);text-decoration:none;font-weight:700;font-size:12px;line-height:1.2;border:.5px solid transparent;transition:background .15s,color .15s;white-space:nowrap;}
+  .dl:hover{background:var(--blue);color:#fff;}
+  .dl.pdf{background:rgba(86,239,159,.15);color:var(--green-d);}
+  .dl.pdf:hover{background:var(--green);color:var(--navy-deep);}
+  .dl.vcf{background:rgba(86,239,159,.15);color:var(--green-d);}
+  .dl.vcf:hover{background:var(--green);color:var(--navy-deep);}
+  .dl.disabled{color:#c3c8d1;background:var(--blue-soft);pointer-events:none;}
+  .btn-enviar{display:inline-flex;align-items:center;gap:4px;border:none;background:var(--blue);color:#fff;font-weight:700;font-size:12px;cursor:pointer;padding:6px 12px;border-radius:7px;font-family:inherit;white-space:nowrap;transition:background .15s;}
+  .btn-enviar:hover{background:var(--navy);}
+  .btn-enviar:disabled{background:var(--blue-soft);color:#c3c8d1;cursor:default;}
+  .btn-enviar.enviado{background:rgba(86,239,159,.18);color:var(--green-d);}
+  .btn-enviar.enviado:hover{background:rgba(86,239,159,.3);}
   .muted{color:var(--dim);font-size:12px;}
   #empty{padding:48px;text-align:center;color:var(--dim);font-size:13.5px;}
+
+  /* Móvil: la tabla se convierte en tarjetas apiladas (cada <tr> es una
+     tarjeta, cada <td> muestra su etiqueta con ::before) para que quepa en
+     el ancho de la pantalla sin scroll horizontal. Los botones de acciones
+     usan flex-wrap y pueden acomodarse en dos filas si hace falta. */
+  @media(max-width:760px){
+    .wrap.ancho{padding:16px 12px 60px;}
+    .card{overflow:visible;border-radius:10px;}
+    .toolbar input{min-width:0;width:100%;}
+    .toolbar a.btn-manual{margin-left:0;width:100%;text-align:center;}
+    .chips{flex-wrap:wrap;}
+    table, thead, tbody, tr, th, td{display:block;width:100%;}
+    thead{display:none;}
+    tbody tr{padding:14px 14px 10px;border-bottom:8px solid var(--blue-soft);}
+    tbody tr:last-child{border-bottom:none;}
+    td{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:6px 0;border-bottom:none;}
+    td::before{content:attr(data-label);flex:none;width:104px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--dim);padding-top:2px;}
+    td > *:not(.botones){flex:1;min-width:0;text-align:right;}
+    td .botones{flex:1;justify-content:flex-end;}
+  }
 </style>
 </head>
 <body>
@@ -84,6 +112,7 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
       <div id="empty" style="display:none;">Sin citas todavía.</div>
     </div>
   </div>
+  ${footerHtml()}
   <script>
     function fechaCDMX(iso) {
       if (!iso) return '—';
@@ -96,7 +125,7 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
       return '<span class="pill ' + info.clase + '">' + info.texto + '</span>';
     }
     const RESEARCH = { pendiente: {clase:'pend', texto:'pendiente'}, manual: {clase:'pend', texto:'sin generar'}, listo: {clase:'ok', texto:'listo'}, error: {clase:'err', texto:'error'} };
-    const ENVIO = { pendiente: {clase:'pend', texto:'pendiente'}, enviado: {clase:'ok', texto:'enviado'}, error: {clase:'err', texto:'error'} };
+    const ENVIO = { pendiente: {clase:'pend', texto:'pendiente'}, enviado: {clase:'ok', texto:'enviado'}, error: {clase:'err', texto:'error'}, sin_dossier: {clase:'err', texto:'sin dossier'} };
 
     // 🟢 = cita futura, 🔴 = cita pasada — automático por fecha, salvo que el
     // usuario lo haya fijado a mano (estado_override).
@@ -142,6 +171,7 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
 
         // Primera celda: 🟢/🔴 clickeable para cambiarlo a mano
         const tdEstado = document.createElement('td');
+        tdEstado.dataset.label = 'Estado';
         const btnEstado = document.createElement('button');
         btnEstado.className = 'btn-estado';
         const est = estadoDe(ev);
@@ -152,14 +182,17 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
         tr.appendChild(tdEstado);
 
         const tdInfo = document.createElement('td');
+        tdInfo.dataset.label = 'Reunión (CDMX)';
         tdInfo.innerHTML = fechaCDMX(ev.start_utc);
         tr.appendChild(tdInfo);
 
         const tdInst = document.createElement('td');
+        tdInst.dataset.label = 'Institución';
         tdInst.textContent = ev.institucion || ev.summary || '—';
         tr.appendChild(tdInst);
 
         const tdRep = document.createElement('td');
+        tdRep.dataset.label = 'Representante';
         tdRep.innerHTML = (ev.representante_nombre || '—') + '<div class="muted">' + (ev.representante_correo || '') + '</div>';
         if (ev.dossier_md || ev.institucion) {
           const lapiz = document.createElement('a');
@@ -173,23 +206,27 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
         tr.appendChild(tdRep);
 
         const restoHtml =
-          '<td>' + (ev.destinatario_nombre || '—') + '<div class="muted">' + (ev.destinatario_email || '') + '</div></td>' +
-          '<td>' + pill(ev.research_status, RESEARCH) + '</td>' +
-          '<td>' + pill(ev.email_status, ENVIO) + '</td>' +
-          '<td>' + fechaCDMX(ev.enviado_en) + '</td>';
+          '<td data-label="Para">' + (ev.destinatario_nombre || '—') + '<div class="muted">' + (ev.destinatario_email || '') + '</div></td>' +
+          '<td data-label="Research">' + pill(ev.research_status, RESEARCH) + '</td>' +
+          '<td data-label="Envío">' + pill(ev.email_status, ENVIO) + '</td>' +
+          '<td data-label="Enviado el">' + fechaCDMX(ev.enviado_en) + '</td>';
         const tmp = document.createElement('template');
         tmp.innerHTML = restoHtml;
         tr.append(...tmp.content.children);
 
         const tdResumen = document.createElement('td');
+        tdResumen.dataset.label = 'Resumen';
         if (ev.dossier_md) {
+          const contenedor = document.createElement('div');
+          contenedor.className = 'botones';
           const verA = document.createElement('a');
           verA.className = 'dl'; verA.target = '_blank'; verA.href = '/eventos/' + uidEnc + '/ver'; verA.textContent = 'Ver';
           const dlA = document.createElement('a');
-          dlA.className = 'dl'; dlA.href = '/eventos/' + uidEnc + '/dossier'; dlA.textContent = 'Descargar .md';
+          dlA.className = 'dl'; dlA.href = '/eventos/' + uidEnc + '/dossier'; dlA.textContent = '.md';
           const pdfA = document.createElement('a');
-          pdfA.className = 'dl'; pdfA.target = '_blank'; pdfA.href = '/eventos/' + uidEnc + '/ver?descargar=pdf'; pdfA.textContent = 'PDF';
-          tdResumen.append(verA, dlA, pdfA);
+          pdfA.className = 'dl pdf'; pdfA.target = '_blank'; pdfA.href = '/eventos/' + uidEnc + '/ver?descargar=pdf'; pdfA.textContent = 'PDF';
+          contenedor.append(verA, dlA, pdfA);
+          tdResumen.appendChild(contenedor);
         } else if (ev.research_status === 'manual' || ev.research_status === 'error') {
           const btn = document.createElement('button');
           btn.className = 'btn-enviar';
@@ -202,12 +239,25 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
         tr.appendChild(tdResumen);
 
         const tdAcciones = document.createElement('td');
-        tdAcciones.className = 'acciones';
+        tdAcciones.dataset.label = 'Acciones';
+        const accionesWrap = document.createElement('div');
+        accionesWrap.className = 'botones';
         const btnEnviar = document.createElement('button');
         btnEnviar.className = ev.email_status === 'enviado' ? 'btn-enviar enviado' : 'btn-enviar';
         btnEnviar.textContent = ev.email_status === 'enviado' ? 'Reenviar correo' : 'Mandar correo';
         btnEnviar.addEventListener('click', () => mandarCorreo(btnEnviar, ev.uid));
-        tdAcciones.appendChild(btnEnviar);
+        accionesWrap.appendChild(btnEnviar);
+        // Descargar la ficha de contacto (.vcf) — lista para guardar en el
+        // teléfono (iPhone/Android), con web, WhatsApp, CRM y link al brief.
+        if (ev.representante_nombre || ev.representante_telefono || ev.representante_correo || ev.institucion) {
+          const vcfA = document.createElement('a');
+          vcfA.className = 'dl vcf';
+          vcfA.href = '/eventos/' + uidEnc + '/vcard';
+          vcfA.title = 'Descargar contacto (vCard)';
+          vcfA.textContent = '👤 Contacto';
+          accionesWrap.appendChild(vcfA);
+        }
+        tdAcciones.appendChild(accionesWrap);
         tr.appendChild(tdAcciones);
 
         cuerpo.appendChild(tr);

@@ -3,6 +3,32 @@ import { escapeHtml, LOGO_SUPERLEADS } from './markdown';
 
 export { LOGO_SUPERLEADS };
 
+// Los dos mensajes de marca que deben aparecer siempre: en el footer de
+// cada página (mini sección) y, vía markdown.ts, al final de todo dossier
+// generado (antes de la sección de fuentes). Un solo lugar para editarlos.
+export const WHY_SUPERLEADS = 'Creemos que ningún alumno debería perder la oportunidad de estudiar en el colegio correcto por culpa de un mal proceso de admisión, y que los colegios deben ser rentables para poder cumplir su misión educativa.';
+export const PROPOSITO_SL = 'Darle Poder a las escuelas para que inscriban fácilmente a millones de estudiantes.';
+
+// Estilos del footer compartido — autocontenidos (traen sus propias
+// variables) para poder incluirse solos en páginas que no cargan
+// ESTILOS_SUPERLEADS completo (p.ej. viewer.ts, que tiene su propio look).
+export const ESTILOS_FOOTER = `
+  :root{ --navy-deep:#001240; --green:#56EF9F; }
+  .site-footer{background:var(--navy-deep);margin-top:48px;padding:32px 24px 22px;position:relative;overflow:hidden;}
+  .site-footer::before{content:"";position:absolute;left:-80px;bottom:-80px;width:260px;height:260px;border-radius:50%;background:rgba(86,239,159,.04);}
+  .footer-inner{max-width:900px;margin:0 auto;position:relative;}
+  .footer-why{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding-bottom:22px;border-bottom:.5px solid rgba(255,255,255,.12);margin-bottom:18px;}
+  .footer-why-item .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:20px;background:rgba(86,239,159,.1);color:var(--green);border:.5px solid rgba(86,239,159,.25);margin-bottom:8px;}
+  .footer-why-item p.txt{margin:0;font-size:12.5px;line-height:1.65;color:#b7c0d8;}
+  .footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .footer-bottom img{width:110px;display:block;opacity:.9;}
+  .footer-bottom p{margin:0;font-size:11px;color:#5c6b8f;}
+  @media(max-width:600px){
+    .footer-why{grid-template-columns:1fr;gap:18px;}
+    .footer-bottom{flex-direction:column;align-items:flex-start;gap:10px;}
+  }
+`;
+
 export const ESTILOS_SUPERLEADS = `
   :root{
     --green:#56EF9F; --green-d:#2BC878;
@@ -33,6 +59,8 @@ export const ESTILOS_SUPERLEADS = `
   .hero-text a{color:var(--green);}
   .wrap{max-width:640px;margin:0 auto;padding:36px 20px 60px;}
   .wrap.ancho{max-width:none;padding:24px 32px 60px;}
+
+  ${ESTILOS_FOOTER}
 `;
 
 // Deja el <head> abierto a propósito: cada página agrega su <style> propio y
@@ -57,4 +85,29 @@ export function heroHeader(opts: { eyebrow: string; titulo: string; subtitulo: s
       <p>${opts.subtitulo}</p>
     </div>
   </header>`;
+}
+
+// Footer compartido por dashboard, /conectar y el viewer del dossier. La
+// mini sección "Why SuperLeads" / "Propósito SL" va SIEMPRE arriba del
+// footer, antes de la franja de marca — es la misma pareja de mensajes que
+// markdown.ts inyecta al final de cada dossier (antes de las fuentes).
+export function footerHtml(): string {
+  return `<footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-why">
+        <div class="footer-why-item">
+          <div class="eyebrow"><span>●</span> Why SuperLeads</div>
+          <p class="txt">${escapeHtml(WHY_SUPERLEADS)}</p>
+        </div>
+        <div class="footer-why-item">
+          <div class="eyebrow"><span>●</span> Propósito SL</div>
+          <p class="txt">${escapeHtml(PROPOSITO_SL)}</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <a href="https://superleads.mx" target="_blank" rel="noopener"><img src="${LOGO_SUPERLEADS}" alt="SuperLeads"></a>
+        <p>© ${new Date().getFullYear()} SuperLeads · Brief Agendado</p>
+      </div>
+    </div>
+  </footer>`;
 }

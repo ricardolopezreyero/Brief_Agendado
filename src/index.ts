@@ -10,6 +10,8 @@ import { paginaVerDossier } from './viewer';
 import { paginaConectar, paginaConectado } from './conectar';
 import { paginaManual } from './manual';
 import { enviarBrief } from './email';
+import { conWhySuperLeads } from './markdown';
+import { generarVCardEvento, nombreArchivoVcf, esElegibleVcf } from './vcard';
 
 // Ricardo López Reyero
 const _k = 'EYE', _rev = 181218;
@@ -82,10 +84,30 @@ export default {
         if (!evento.dossier_md) return json({ error: 'Este evento todavía no tiene dossier' }, 404);
 
         const nombreArchivo = `dossier-${(evento.institucion || evento.summary || evento.uid).replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.md`;
-        return new Response(evento.dossier_md, {
+        // Misma sección "Por qué SuperLeads" que ve el viewer y el correo,
+        // también en el .md descargable — siempre antes de las fuentes.
+        return new Response(conWhySuperLeads(evento.dossier_md), {
           headers: {
             'Content-Type': 'text/markdown; charset=utf-8',
             'Content-Disposition': `attachment; filename="${nombreArchivo}"`,
+          },
+        });
+      }
+
+      // Ficha de contacto (.vcf) del representante — lista para guardar en el
+      // teléfono: nombre, colegio, tel, correo, web, WhatsApp, CRM, Zoom y
+      // link al propio brief, con los X-SUPERLEADS-* de contexto comercial.
+      if (method === 'GET' && pathname.startsWith('/eventos/') && pathname.endsWith('/vcard')) {
+        const uid = extraerUid(pathname, '/vcard');
+        const evento = await getEvento(env.DB, uid);
+        if (!evento) return json({ error: 'No encontrado' }, 404);
+        if (!esElegibleVcf(evento)) return json({ error: 'Este evento no tiene datos de contacto suficientes' }, 404);
+
+        const vcf = generarVCardEvento(evento, url.origin);
+        return new Response(vcf, {
+          headers: {
+            'Content-Type': 'text/vcard; charset=utf-8',
+            'Content-Disposition': `attachment; filename="${nombreArchivoVcf(evento)}"`,
           },
         });
       }

@@ -17,9 +17,45 @@ function inlineMd(s: string): string {
   return out;
 }
 
+// Los dos mensajes de marca que van SIEMPRE al final de cualquier dossier,
+// justo antes de la sección de fuentes — sin depender de lo que redacte
+// DeepSeek. Están duplicados aquí (en vez de importarlos de branding.ts)
+// porque branding.ts ya importa de este archivo (LOGO_SUPERLEADS); mismo
+// texto exacto que el footer del sitio, ver branding.ts.
+const WHY_SUPERLEADS_MD = 'Creemos que ningún alumno debería perder la oportunidad de estudiar en el colegio correcto por culpa de un mal proceso de admisión, y que los colegios deben ser rentables para poder cumplir su misión educativa.';
+const PROPOSITO_SL_MD = 'Darle Poder a las escuelas para que inscriban fácilmente a millones de estudiantes.';
+
+const SECCION_WHY_SUPERLEADS = `## Por qué SuperLeads
+**Why SuperLeads:** ${WHY_SUPERLEADS_MD}
+
+**Propósito SL:** ${PROPOSITO_SL_MD}`;
+
+// Inserta la sección fija "Por qué SuperLeads" siempre en el mismo lugar:
+// al final del dossier, justo antes de "## Fuentes consultadas" (la
+// bibliografía). Si por algún motivo el dossier no trae esa sección
+// (DeepSeek no la generó), se agrega al final de todos modos — nunca se
+// pierde. Idempotente: si ya está insertada, no la duplica.
+export function conWhySuperLeads(dossierMd: string): string {
+  if (dossierMd.includes('## Por qué SuperLeads')) return dossierMd;
+
+  const lineas = dossierMd.split('\n');
+  const idxFuentes = lineas.findIndex(l => /^##\s*fuentes/i.test(l.trim()));
+
+  if (idxFuentes === -1) {
+    return `${dossierMd.trimEnd()}\n\n${SECCION_WHY_SUPERLEADS}\n`;
+  }
+
+  const antes = lineas.slice(0, idxFuentes).join('\n').trimEnd();
+  const desde = lineas.slice(idxFuentes).join('\n');
+  return `${antes}\n\n${SECCION_WHY_SUPERLEADS}\n\n${desde}`;
+}
+
 // Convierte el markdown del dossier (secciones ## + listas "- ") a HTML.
+// Siempre pasa primero por conWhySuperLeads() para que la mini sección de
+// marca aparezca en TODO lugar donde se renderiza un dossier (viewer,
+// correo, PDF) sin tener que tocar cada llamador.
 export function dossierToHtml(md: string): string {
-  const lines = md.split('\n');
+  const lines = conWhySuperLeads(md).split('\n');
   const blocks: string[] = [];
   let list: string[] = [];
   let paragraph: string[] = [];

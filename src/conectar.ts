@@ -1,7 +1,7 @@
 // RLR
 import type { EventoRecord } from './types';
 import { escapeHtml, fechaLegibleCDMX } from './markdown';
-import { ESTILOS_SUPERLEADS, headAbiertoHtml, heroHeader } from './branding';
+import { ESTILOS_SUPERLEADS, headAbiertoHtml, heroHeader, footerHtml } from './branding';
 
 interface Mensaje {
   tipo: 'ok' | 'error';
@@ -152,6 +152,7 @@ ${headAbiertoHtml('Conectar calendario — Brief Agendado')}
       <p class="nota-privacidad">Esta URL solo se usa para leer tus citas de Rayos X — no se comparte con nadie ni se hace pública.</p>
     </form>
   </div>
+  ${footerHtml()}
 </body>
 </html>`;
 }
@@ -208,6 +209,7 @@ ${headAbiertoHtml('Calendario conectado — Brief Agendado')}
     ${backlogHtml}
     <a class="volver" href="/">← Ir al dashboard</a>
   </div>
+  ${footerHtml()}
   <script>
     // Los botones se conectan con addEventListener leyendo data-uid (no con
     // onclick="fn(this,'...')" embebido) — el minificador de JS de Cloudflare
