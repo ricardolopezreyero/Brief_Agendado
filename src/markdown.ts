@@ -76,9 +76,23 @@ export function dossierToHtml(md: string): string {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) { flushParagraph(); flushList(); continue; }
+    const img = line.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/);
     if (line.startsWith('## ')) {
       flushParagraph(); flushList();
       blocks.push(`<p data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#1a2b4c;border-bottom:1px solid #eef0f3;padding-bottom:6px;">${escapeHtml(line.slice(3))}</p>`);
+    } else if (img) {
+      // Imagen de markdown en su propia línea (sección "Fotos relevantes")
+      flushParagraph(); flushList();
+      blocks.push(`<figure style="margin:0 0 14px;display:inline-block;vertical-align:top;width:48%;margin-right:2%;"><img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}" style="width:100%;border-radius:8px;display:block;"><figcaption style="font-size:11px;color:#9aa2b1;margin-top:4px;line-height:1.4;">${escapeHtml(img[1])}</figcaption></figure>`);
+    } else if (line.startsWith('(Encontrada en:')) {
+      // Pie de foto con la página de origen — va pegado a la figura anterior
+      const urlFuente = line.match(/https?:\/\/[^\s)]+/)?.[0];
+      if (urlFuente && blocks.length && blocks[blocks.length - 1].startsWith('<figure')) {
+        blocks[blocks.length - 1] = blocks[blocks.length - 1].replace(
+          '</figcaption></figure>',
+          ` · <a href="${escapeHtml(urlFuente)}" style="color:#3457d5;">fuente</a></figcaption></figure>`,
+        );
+      }
     } else if (line.startsWith('- ')) {
       flushParagraph();
       list.push(line.slice(2).trim());

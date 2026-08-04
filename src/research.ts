@@ -3,10 +3,15 @@ import { llamarDeepSeek } from './deepseek';
 import type { ProspectoExtraido, FuenteResultado } from './types';
 
 const BRAVE_ENDPOINT = 'https://api.search.brave.com/res/v1/web/search';
+const BRAVE_IMAGES_ENDPOINT = 'https://api.search.brave.com/res/v1/images/search';
 
 const ICP_SUPERLEADS = `SuperLeads vende un sistema de admisiones (CRM educativo) para colegios privados en México/LATAM. El dolor central que resuelve: familias interesadas que se pierden en el proceso de inscripción por falta de seguimiento oportuno ("inscripciones fantasma"). ICP ideal: colegio privado establecido, con matrícula relevante, proceso de admisión activo (temporada de inscripciones), dolor visible en seguimiento a leads/prospectos, decisor con autoridad para invertir en tecnología (dirección general, dirección de admisiones/mercadotecnia).`;
 
-const SYSTEM_QUERIES = `Diseñas queries de búsqueda web para investigar a un colegio privado y su representante antes de una reunión comercial de ventas. Devuelve SIEMPRE un único array JSON de 5 a 6 strings (las queries), sin texto adicional. Cada query debe ser específica y ejecutable en un buscador real (nombre propio del colegio, ciudad si se infiere del dominio/teléfono, temas como matrícula, redes sociales, reputación, competencia, noticias recientes). No inventes datos que no te dieron.`;
+const SYSTEM_QUERIES = `Diseñas queries de búsqueda web para investigar a un colegio privado y su representante antes de una reunión comercial de ventas. Devuelve SIEMPRE un único objeto JSON, sin texto adicional, con esta forma exacta:
+{"ciudad": "", "queries": ["...", "..."]}
+
+- "ciudad": la ciudad donde está el colegio, si se puede inferir del dominio, la lada telefónica (p.ej. 999 = Mérida, 33 = Guadalajara, 81 = Monterrey, 55 = CDMX) o el nombre. Si no se puede inferir con confianza, "".
+- "queries": de 5 a 6 strings, cada una específica y ejecutable en un buscador real (nombre propio del colegio, ciudad si se infiere, temas como matrícula, redes sociales, reputación, competencia, noticias recientes). No inventes datos que no te dieron.`;
 
 // Dominios de redes sociales que buscamos directamente en el HTML del sitio
 // oficial (header/footer) — mucho más confiable que confiar en resultados de
@@ -70,6 +75,9 @@ Una red social por línea, SIEMPRE como bullet de markdown (empieza con "- "), n
 - **Plataforma**: URL — seguidores: N (Fuente: URL)
 - **Otra plataforma**: URL — seguidores: no encontrado
 
+## Posicionamiento en buscadores
+Te doy mediciones EXACTAS en "Datos medidos de posicionamiento" (posición del sitio del colegio al buscar su nombre, y al buscar colegios privados en su ciudad). Repórtalas TAL CUAL, sin cambiarlas ni inventar otras, una por bullet. Di siempre "en buscadores" o "en resultados de búsqueda" — NUNCA lo atribuyas a Google específicamente (la medición viene de un buscador web independiente). Cierra con 1-2 frases de lectura comercial: si el colegio NO aparece cuando una familia busca "colegios privados en su ciudad", esa invisibilidad es exactamente el tipo de fuga de prospectos que SuperLeads ayuda a corregir; si aparece bien posicionado, el ángulo es convertir ese tráfico en inscripciones. Si no hubo mediciones (sin sitio web o sin ciudad inferida), dilo.
+
 ## El representante
 (rol, lo que se sabe de su trayectoria/actividad pública si algo se encontró; si no hay nada, decirlo)
 
@@ -91,24 +99,80 @@ Lo que un padre de familia o un alumno ve al googlear la institución. Si en los
 ## Fuentes consultadas
 (lista de URLs usadas)`;
 
-export async function generarQueries(deepseekKey: string, p: ProspectoExtraido): Promise<string[]> {
+export async function generarQueries(deepseekKey: string, p: ProspectoExtraido): Promise<{ ciudad: string; queries: string[] }> {
   const user = `Datos del prospecto:
 Institución: ${p.institucion || '(desconocida)'}
 Web: ${p.web || '(desconocida)'}
 Representante: ${p.representante_nombre || '(desconocido)'}
 Teléfono: ${p.representante_telefono || '(desconocido)'}`;
 
-  const raw = await llamarDeepSeek(deepseekKey, { system: SYSTEM_QUERIES, user, temperature: 0.4 });
+  const raw = await llamarDeepSeek(deepseekKey, { system: SYSTEM_QUERIES, user, jsonMode: true, temperature: 0.4 });
   try {
-    const match = raw.match(/\[[\s\S]*\]/);
-    const arr = JSON.parse(match ? match[0] : raw);
-    if (Array.isArray(arr)) return arr.filter((q): q is string => typeof q === 'string' && q.trim().length > 0).slice(0, 6);
+    const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] ?? raw);
+    const queries = Array.isArray(parsed.queries)
+      ? parsed.queries.filter((q: unknown): q is string => typeof q === 'string' && q.trim().length > 0).slice(0, 6)
+      : [];
+    if (queries.length) return { ciudad: typeof parsed.ciudad === 'string' ? parsed.ciudad.trim() : '', queries };
   } catch {
     // sigue al fallback
   }
   // Fallback si DeepSeek no devolvió JSON parseable: queries genéricas mínimas.
   const base = p.institucion || p.web;
-  return [base, `${base} colegio privado`, `${base} admisiones`, `${p.representante_nombre} ${base}`].filter(Boolean);
+  return { ciudad: '', queries: [base, `${base} colegio privado`, `${base} admisiones`, `${p.representante_nombre} ${base}`].filter(Boolean) };
+}
+
+// ── Posicionamiento en buscadores ──
+// Medición determinística (no opinión del LLM): en qué posición aparece el
+// sitio del colegio dentro de los primeros 10 resultados de una búsqueda.
+// Dominios compartidos (linktr.ee, facebook...) se comparan por URL completa,
+// no por dominio — si no, cualquier linktr.ee ajeno contaría como suyo.
+const DOMINIOS_COMPARTIDOS = ['linktr.ee', 'facebook.com', 'instagram.com', 'wixsite.com', 'google.com'];
+
+function normalizarUrl(u: string): string {
+  return u.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '');
+}
+
+export function posicionDeSitio(resultados: FuenteResultado[], webUrl: string): number | null {
+  if (!webUrl) return null;
+  const propio = normalizarUrl(webUrl);
+  const host = propio.split('/')[0];
+  const esCompartido = DOMINIOS_COMPARTIDOS.some(d => host === d || host.endsWith('.' + d));
+  for (let i = 0; i < resultados.length; i++) {
+    const res = normalizarUrl(resultados[i].url);
+    const coincide = esCompartido ? res.startsWith(propio) : res.split('/')[0] === host;
+    if (coincide) return i + 1;
+  }
+  return null;
+}
+
+// ── Fotos relevantes (Brave Image Search) ──
+// Registro visual de cómo se ve el prospecto en internet. Si el plan de Brave
+// no incluye imágenes o la búsqueda falla, regresa vacío sin romper nada.
+export async function buscarFotosBrave(braveKey: string, query: string): Promise<Array<{ titulo: string; url: string; fuente: string }>> {
+  try {
+    const url = new URL(BRAVE_IMAGES_ENDPOINT);
+    url.searchParams.set('q', query);
+    url.searchParams.set('count', '4');
+    url.searchParams.set('country', 'mx');
+    url.searchParams.set('search_lang', 'es');
+
+    const r = await fetch(url.toString(), {
+      headers: { 'Accept': 'application/json', 'X-Subscription-Token': braveKey },
+    });
+    if (!r.ok) return [];
+
+    const data = await r.json() as { results?: Array<{ title?: string; url?: string; thumbnail?: { src?: string }; properties?: { url?: string } }> };
+    return (data.results ?? [])
+      .map(res => ({
+        titulo: (res.title ?? 'Foto').replace(/[\[\]()]/g, '').slice(0, 90),
+        url: res.thumbnail?.src || res.properties?.url || '',
+        fuente: res.url ?? '',
+      }))
+      .filter(f => f.url)
+      .slice(0, 4);
+  } catch {
+    return [];
+  }
 }
 
 // Se agregan siempre, además de las que diseñe DeepSeek — ni el número de
@@ -125,10 +189,10 @@ function queriesFijas(p: ProspectoExtraido): string[] {
   ];
 }
 
-export async function buscarBrave(braveKey: string, query: string): Promise<FuenteResultado[]> {
+export async function buscarBrave(braveKey: string, query: string, count = 5): Promise<FuenteResultado[]> {
   const url = new URL(BRAVE_ENDPOINT);
   url.searchParams.set('q', query);
-  url.searchParams.set('count', '5');
+  url.searchParams.set('count', String(count));
   url.searchParams.set('country', 'mx');
   url.searchParams.set('search_lang', 'es');
 
@@ -149,17 +213,50 @@ export async function buscarBrave(braveKey: string, query: string): Promise<Fuen
 }
 
 export async function ejecutarResearch(deepseekKey: string, braveKey: string, p: ProspectoExtraido): Promise<string> {
-  const [queriesGeneradas, redesDetectadas] = await Promise.all([
+  const [{ ciudad, queries: queriesGeneradas }, redesDetectadas] = await Promise.all([
     generarQueries(deepseekKey, p),
     extraerRedesSociales(p.web),
   ]);
 
   const queries = [...queriesGeneradas, ...queriesFijas(p)];
 
-  const resultadosPorQuery = await Promise.all(queries.map(async q => ({
-    query: q,
-    resultados: await buscarBrave(braveKey, q),
-  })));
+  // Búsquedas de posicionamiento (top 10): la del nombre a secas mide si una
+  // familia que ya los conoce los encuentra; la de "colegios privados en
+  // <ciudad>" mide si los descubre quien todavía no sabe que existen.
+  const queryNombre = p.institucion || null;
+  const queryZona = ciudad ? `colegios privados en ${ciudad}` : null;
+
+  const [resultadosPorQuery, resNombre, resZona, fotos] = await Promise.all([
+    Promise.all(queries.map(async q => ({ query: q, resultados: await buscarBrave(braveKey, q) }))),
+    queryNombre ? buscarBrave(braveKey, queryNombre, 10) : Promise.resolve([]),
+    queryZona ? buscarBrave(braveKey, queryZona, 10) : Promise.resolve([]),
+    p.institucion ? buscarFotosBrave(braveKey, `${p.institucion} colegio`) : Promise.resolve([]),
+  ]);
+
+  const posNombre = posicionDeSitio(resNombre, p.web);
+  const posZona = posicionDeSitio(resZona, p.web);
+
+  const lineasPos: string[] = [];
+  if (queryNombre && p.web) {
+    lineasPos.push(posNombre
+      ? `- Al buscar "${queryNombre}": su sitio aparece en la posición ${posNombre} de los primeros 10 resultados.`
+      : `- Al buscar "${queryNombre}": su sitio NO aparece en los primeros 10 resultados.`);
+  } else {
+    lineasPos.push('- No se pudo medir la búsqueda por nombre (falta el nombre de la institución o su sitio web).');
+  }
+  if (queryZona && p.web) {
+    lineasPos.push(posZona
+      ? `- Al buscar "${queryZona}": su sitio aparece en la posición ${posZona} de los primeros 10 resultados.`
+      : `- Al buscar "${queryZona}": su sitio NO aparece en los primeros 10 resultados.`);
+  } else if (!ciudad) {
+    lineasPos.push('- No se pudo medir la búsqueda por zona (no se infirió la ciudad con confianza).');
+  }
+
+  // La búsqueda de zona también sirve de contexto: ahí se ven los colegios
+  // competidores que SÍ aparecen cuando una familia busca en esa ciudad.
+  if (queryZona && resZona.length) {
+    resultadosPorQuery.push({ query: queryZona + ' (top 10, para ver competidores visibles)', resultados: resZona });
+  }
 
   const fuentesTexto = resultadosPorQuery.map(({ query, resultados }) => {
     if (!resultados.length) return `### Query: "${query}"\n(sin resultados)`;
@@ -175,13 +272,31 @@ export async function ejecutarResearch(deepseekKey: string, braveKey: string, p:
 Institución: ${p.institucion || '(desconocida)'}
 Web: ${p.web || '(desconocida)'}
 Representante: ${p.representante_nombre || '(desconocido)'} — Teléfono: ${p.representante_telefono || '(desconocido)'} — Correo: ${p.representante_correo || '(desconocido)'}
+Ciudad inferida: ${ciudad || '(no inferida)'}
 
 Redes sociales detectadas en el sitio oficial:
 ${redesTexto}
+
+Datos medidos de posicionamiento (repórtalos tal cual en la sección "Posicionamiento en buscadores"):
+${lineasPos.join('\n')}
 
 Resultados de búsqueda web:
 
 ${fuentesTexto}`;
 
-  return llamarDeepSeek(deepseekKey, { system: SYSTEM_DOSSIER, user, temperature: 0.3, model: 'deepseek-v4-pro' });
+  let dossier = await llamarDeepSeek(deepseekKey, { system: SYSTEM_DOSSIER, user, temperature: 0.3, model: 'deepseek-v4-pro' });
+
+  // La sección de fotos se arma aquí (no en el LLM) para que las URLs sean
+  // reales y no alucinadas — es el registro visual de cómo los encontramos.
+  if (fotos.length) {
+    const seccionFotos = '## Fotos relevantes\n' + fotos
+      .map(f => `![${f.titulo}](${f.url})\n(Encontrada en: ${f.fuente})`)
+      .join('\n');
+    const marcaFuentes = '## Fuentes consultadas';
+    dossier = dossier.includes(marcaFuentes)
+      ? dossier.replace(marcaFuentes, seccionFotos + '\n\n' + marcaFuentes)
+      : dossier + '\n\n' + seccionFotos;
+  }
+
+  return dossier;
 }

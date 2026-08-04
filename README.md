@@ -35,9 +35,24 @@ Cron cada 15 min ── scheduled()
         confiable que depender solo de resultados de búsqueda; el número de
         seguidores sí se busca aparte y solo se reporta si aparece
         explícitamente en una fuente (nunca se inventa)
-      - Tope de 4 investigaciones por corrida (límite de subrequests del
-        plan gratuito de Cloudflare) — lo que no alcanza, sigue en la
-        siguiente corrida
+      - **Posicionamiento en buscadores (medido, no opinión del LLM)**: se
+        busca el nombre del colegio y "colegios privados en <ciudad
+        inferida>" (top 10 de Brave) y se calcula determinísticamente en qué
+        posición aparece SU dominio — o si no aparece, que es el anclaje de
+        venta más fuerte ("las familias que buscan colegio en tu ciudad no
+        te encuentran"). Los resultados de la búsqueda por zona también se
+        pasan al dossier como lista de competidores visibles. Dominios
+        compartidos (linktr.ee, facebook...) se comparan por URL completa
+        para no dar falsos positivos. Ver posicionDeSitio() en research.ts.
+      - **Fotos relevantes**: Brave Image Search (hasta 4) — la sección se
+        arma en código con las URLs reales (no las escribe el LLM, para que
+        no alucine links) e incluye la página de origen de cada foto; queda
+        como registro visual de cómo se encontró al prospecto. Se renderiza
+        en el visor, el correo y el PDF (en el PDF alguna puede salir en
+        blanco si su servidor no permite CORS).
+      - Tope de 3 investigaciones por corrida (límite de subrequests del
+        plan gratuito de Cloudflare, ~14 fetches por research) — lo que no
+        alcanza, sigue en la siguiente corrida
    2. enviarBriefsDelDia()
       - Si ya son las 9am hora CDMX (offset fijo UTC-6): busca citas de HOY
         sin enviar (genera el dossier sobre la marcha si aún no corrió)
