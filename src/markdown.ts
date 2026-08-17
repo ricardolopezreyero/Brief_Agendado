@@ -62,16 +62,26 @@ export function dossierToHtml(md: string): string {
   const blocks: string[] = [];
   let list: string[] = [];
   let paragraph: string[] = [];
+  // La sección "Rayos X" es el resumen condensado que un comercial lee en
+  // vez de todo el brief — se resalta como callout (guia-estilos §Componentes)
+  // para que salte a la vista en pantalla, PDF y correo por igual.
+  let enRayosX = false;
 
   const flushParagraph = () => {
     if (paragraph.length) {
-      blocks.push(`<p style="margin:0 0 14px;">${inlineMd(paragraph.join(' '))}</p>`);
+      const estilo = enRayosX
+        ? 'margin:0 0 20px;padding:16px 20px;border-left:4px solid #002582;background:#EEF2FF;border-radius:0 12px 12px 0;'
+        : 'margin:0 0 14px;';
+      blocks.push(`<p style="${estilo}">${inlineMd(paragraph.join(' '))}</p>`);
       paragraph = [];
     }
   };
   const flushList = () => {
     if (list.length) {
-      blocks.push(`<ul style="margin:0 0 14px;padding-left:20px;">${list.map(li => `<li style="margin-bottom:8px;">${inlineMd(li)}</li>`).join('')}</ul>`);
+      const estilo = enRayosX
+        ? 'margin:0 0 20px;padding:16px 24px 16px 38px;border-left:4px solid #002582;background:#EEF2FF;border-radius:0 12px 12px 0;'
+        : 'margin:0 0 14px;padding-left:20px;';
+      blocks.push(`<ul style="${estilo}">${list.map(li => `<li style="margin-bottom:8px;">${inlineMd(li)}</li>`).join('')}</ul>`);
       list = [];
     }
   };
@@ -82,7 +92,9 @@ export function dossierToHtml(md: string): string {
     const img = line.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/);
     if (line.startsWith('## ')) {
       flushParagraph(); flushList();
-      blocks.push(`<h2 data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#002582;border-bottom:.5px solid #e0e8f8;padding-bottom:6px;">${escapeHtml(line.slice(3))}</h2>`);
+      const titulo = line.slice(3).trim();
+      enRayosX = /^rayos x$/i.test(titulo);
+      blocks.push(`<h2 data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#002582;border-bottom:.5px solid #e0e8f8;padding-bottom:6px;">${escapeHtml(titulo)}</h2>`);
     } else if (img) {
       // Imagen de markdown en su propia línea (sección "Fotos relevantes")
       flushParagraph(); flushList();
