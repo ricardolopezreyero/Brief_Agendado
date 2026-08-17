@@ -62,9 +62,10 @@ export function dossierToHtml(md: string): string {
   const blocks: string[] = [];
   let list: string[] = [];
   let paragraph: string[] = [];
-  // La sección "Rayos X" es el resumen condensado que un comercial lee en
-  // vez de todo el brief — se resalta como callout (guia-estilos §Componentes)
-  // para que salte a la vista en pantalla, PDF y correo por igual.
+  // La sección "Resumen Brief Pre Rayos X Inscripciones" es el condensado
+  // que un comercial lee en vez de todo el brief — se resalta como callout
+  // (guia-estilos §Componentes) para que salte a la vista en pantalla, PDF
+  // y correo por igual.
   let enRayosX = false;
 
   const flushParagraph = () => {
@@ -93,7 +94,7 @@ export function dossierToHtml(md: string): string {
     if (line.startsWith('## ')) {
       flushParagraph(); flushList();
       const titulo = line.slice(3).trim();
-      enRayosX = /^rayos x$/i.test(titulo);
+      enRayosX = /^resumen brief pre rayos x inscripciones$/i.test(titulo);
       blocks.push(`<h2 data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#002582;border-bottom:.5px solid #e0e8f8;padding-bottom:6px;">${escapeHtml(titulo)}</h2>`);
     } else if (img) {
       // Imagen de markdown en su propia línea (sección "Fotos relevantes")

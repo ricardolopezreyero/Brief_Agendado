@@ -88,7 +88,7 @@ Si necesitas citar una cifra de SuperLeads (no del prospecto), la única vigente
 
 Responde en markdown con EXACTAMENTE estas secciones, en este orden:
 
-## Rayos X
+## Resumen Brief Pre Rayos X Inscripciones
 Va primero, antes que nada — es lo único que un comercial apurado necesita leer antes de entrar a la reunión, sin tener que leer el resto del brief (el resto sigue completo abajo, es para quien sí quiera leerlo con calma, incluido el propio prospecto si lo comparten). De 3 a 8 bullets ultra-condensados, uno por línea, cada uno el dato solo — sin la explicación ni el desarrollo que ya está en las secciones de abajo. Solo entra aquí lo súper relevante para la reunión: antigüedad de la institución, tamaño de matrícula, si tiene o no presencia digital activa, calificación/número de reseñas, si aparece o no en buscadores, el score de fit ICP, el hallazgo más accionable del cruce con el ICP — cualquier otro dato del mismo calibre si lo hay. Un bullet por dato, formato "**Campo**: valor" (ej. "**Matrícula**: 2,000 alumnos", "**Presencia digital**: sin redes sociales oficiales", "**Buscadores**: no aparece en los primeros 10 resultados", "**Score de fit ICP**: 7/10"). Incluye solo los que sí tengan dato real detrás — nunca escribas un bullet diciendo "no se encontró X" ni rellenes para llegar a un número; si el prospecto trae poca información, este bloque sale corto, y está bien así.
 
 ## Resumen ejecutivo
