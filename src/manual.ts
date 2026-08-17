@@ -1,5 +1,5 @@
 // RLR
-import { ESTILOS_SUPERLEADS, headAbiertoHtml, heroHeader } from './branding';
+import { ESTILOS_SUPERLEADS, headAbiertoHtml, appShellAbrir, APP_SHELL_CERRAR, pageHeader, footerHtml } from './branding';
 
 export function paginaManual(): string {
   return `<!doctype html>
@@ -28,13 +28,9 @@ ${headAbiertoHtml('Generar brief manual — Brief Agendado')}
 </style>
 </head>
 <body>
-  ${heroHeader({
-    eyebrow: 'Brief Agendado',
-    titulo: 'Generar brief manual',
-    subtitulo: 'Pega aquí los datos del prospecto tal cual vienen en la descripción del calendario (o corregidos) y se genera el brief al momento — útil cuando alguien capturó algo mal y hay que rehacerlo.',
-    volverHref: '/',
-  })}
-  <div class="wrap">
+  ${appShellAbrir('manual')}
+    ${pageHeader('Brief Agendado', 'Generar Brief Manual', 'Pega la información del prospecto y arma el brief sin esperar a que llegue por calendario — útil cuando alguien capturó algo mal y hay que rehacerlo.')}
+    <div class="narrow">
     <div class="card">
       <h2>Datos del prospecto</h2>
       <p class="sub">Copia y pega toda la descripción de la cita (institución, web, nombre, teléfono, correo...). Entre más completo, mejor sale la investigación.</p>
@@ -52,7 +48,9 @@ ${headAbiertoHtml('Generar brief manual — Brief Agendado')}
       </div>
       <div id="estado"></div>
     </div>
-  </div>
+    </div>
+  ${APP_SHELL_CERRAR}
+  ${footerHtml()}
   <script>
     let progresoTimer = null;
     function iniciarProgreso() {

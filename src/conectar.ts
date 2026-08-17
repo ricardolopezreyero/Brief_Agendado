@@ -1,7 +1,7 @@
 // RLR
 import type { EventoRecord } from './types';
 import { escapeHtml, fechaLegibleCDMX } from './markdown';
-import { ESTILOS_SUPERLEADS, headAbiertoHtml, heroHeader, footerHtml } from './branding';
+import { ESTILOS_SUPERLEADS, headAbiertoHtml, appShellAbrir, APP_SHELL_CERRAR, pageHeader, footerHtml } from './branding';
 
 interface Mensaje {
   tipo: 'ok' | 'error';
@@ -75,14 +75,9 @@ ${headAbiertoHtml('Conectar calendario — Brief Agendado')}
 </style>
 </head>
 <body>
-  ${heroHeader({
-    eyebrow: 'Brief Agendado',
-    titulo: 'Conecta tu calendario',
-    subtitulo: 'Solo para comerciales SuperLeads. Cualquier cita cuyo título contenga <strong>"Rayos X"</strong> dispara una investigación automática del prospecto — te llega un brief por correo el día de la reunión, a las 9am.',
-    volverHref: '/',
-  })}
-
-  <div class="wrap">
+  ${appShellAbrir('conectar')}
+    ${pageHeader('Brief Agendado', 'Conectar Calendario', 'Solo para comerciales SuperLeads. Cualquier cita cuyo título contenga <strong>"Rayos X"</strong> dispara una investigación automática del prospecto — te llega un brief por correo el día de la reunión, a las 9am.')}
+    <div class="narrow">
     ${avisoHtml(mensaje)}
 
     <div class="clave">
@@ -151,7 +146,8 @@ ${headAbiertoHtml('Conectar calendario — Brief Agendado')}
       <button type="submit">Conectar calendario</button>
       <p class="nota-privacidad">Esta URL solo se usa para leer tus citas de Rayos X — no se comparte con nadie ni se hace pública.</p>
     </form>
-  </div>
+    </div>
+  ${APP_SHELL_CERRAR}
   ${footerHtml()}
 </body>
 </html>`;
@@ -198,17 +194,14 @@ ${headAbiertoHtml('Calendario conectado — Brief Agendado')}
 </style>
 </head>
 <body>
-  ${heroHeader({
-    eyebrow: 'Brief Agendado',
-    titulo: `¡Listo, ${escapeHtml(nombre.split(' ')[0])}!`,
-    subtitulo: 'Tu calendario ya está conectado. Cualquier cita nueva con <strong>"Rayos X"</strong> en el título se investigará sola y te llegará el brief el día de la reunión, a las 9am.',
-    volverHref: '/',
-  })}
-  <div class="wrap">
+  ${appShellAbrir('conectar')}
+    ${pageHeader('Brief Agendado', `¡Listo, ${escapeHtml(nombre.split(' ')[0])}!`, 'Tu calendario ya está conectado. Cualquier cita nueva con <strong>"Rayos X"</strong> en el título se investigará sola y te llegará el brief el día de la reunión, a las 9am.')}
+    <div class="narrow">
     <div class="aviso-ok">✓ Calendario conectado correctamente.</div>
     ${backlogHtml}
-    <a class="volver" href="/">← Ir al dashboard</a>
-  </div>
+    <a class="volver" href="/">← Ir al historial</a>
+    </div>
+  ${APP_SHELL_CERRAR}
   ${footerHtml()}
   <script>
     // Los botones se conectan con addEventListener leyendo data-uid (no con

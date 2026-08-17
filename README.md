@@ -134,11 +134,12 @@ El evento queda en el histórico con uid `manual-<timestamp>`.
 
 ## Editar datos y regenerar (`/eventos/:uid/ver`)
 
-El lápiz ✏️ junto al título abre un formulario con los datos extraídos
-(institución, web, nombre, teléfono, correo, WhatsApp). Dos opciones:
+El lápiz (ícono SVG, no emoji) junto al título abre un formulario con los
+datos extraídos (institución, web, nombre, teléfono, correo, WhatsApp). Dos
+opciones:
 
 - **Guardar** — solo corrige los datos guardados.
-- **Guardar y generar nuevo brief** — guarda y corre el research otra vez
+- **Guardar y regenerar brief** — guarda y corre el research otra vez
   usando los datos corregidos (SIN re-extraer de la descripción original,
   que pisaría las correcciones — ver `regenerarConDatosGuardados()` en
   `src/scheduled.ts`). El dossier nuevo reemplaza al anterior.
@@ -153,6 +154,40 @@ real de que terminó.
 
 La página del brief también tiene arriba los botones **Descargar PDF**
 (primario, verde) y **Descargar .md** (secundario), además de los del pie.
+
+## Diseño y voz de marca
+
+Todo el producto (web + PDF + correo + el propio dossier) sigue los dos
+repos oficiales de SuperLeads — un rediseño completo, no cosmético:
+
+- **`github.com/SuperLeads-LLC/guia-estilos`** (apariencia): tokens de color,
+  tipografía `Plus Jakarta Sans`, componentes (`.btn-primary/navy/outline`,
+  tarjetas, badges) y, en particular, el patrón **"Sidebar de aplicación"**
+  (§10.2) — sidebar fijo de 288px, navy-deep, con logo blanco + badge arriba,
+  CTA principal (nunca al fondo) y nav con descripción bajo cada ítem. Está
+  implementado en `branding.ts` (`ESTILOS_SUPERLEADS`, `sidebarHtml()`,
+  `appShellAbrir()`/`APP_SHELL_CERRAR`, `pageHeader()`) y compartido por
+  `dashboard.ts`, `manual.ts`, `conectar.ts` y `viewer.ts`. En <1024px el
+  sidebar se oculta y se reemplaza por una barra superior delgada (regla
+  explícita de la guía) para no dejar la navegación sin salida.
+- **`github.com/SuperLeads-LLC/copy-writer`** (voz): el prompt `SYSTEM_DOSSIER`
+  en `research.ts` sigue las reglas de tono de la casa — "el dato antes que
+  el adjetivo", párrafos de 2-3 líneas, vocabulario propietario (**"fuga"**,
+  nunca "pérdida" ni "oportunidades perdidas"), lista de palabras prohibidas
+  (innovador, disruptivo, garantizamos, etc.) y, sobre todo, el principio
+  del **"quitaculpas"**: cualquier hallazgo negativo (mal SEO, sin redes
+  sociales, mala reputación) se redacta como ausencia de sistema, nunca como
+  culpa del director o su equipo — en el tono que el comercial puede repetir
+  en voz alta en la reunión sin que suene a acusación.
+
+El PDF sigue la anatomía de documento de la guía: tamaño **Carta**
+(216×279mm, nunca A4), portada navy con logo blanco + eyebrow + título +
+fecha + leyenda de confidencialidad (sin folio), páginas interiores con
+header de logo azul + filete y footer con institución·fecha + folio
+(`N / total`, calculado en dos pasadas para que el conteo sea exacto). El
+nombre del archivo (`brief-{slug}-{fecha}-{hora}.pdf`) es la única
+excepción intencional a la convención de nombre de la guía — se mantiene el
+formato ya usado en el histórico, por instrucción explícita.
 
 ## Motores usados
 
@@ -253,6 +288,8 @@ src/
   viewer.ts         HTML de /eventos/:uid/ver (dossier + botón de envío + PDF)
   conectar.ts        HTML de /conectar (marca SuperLeads, pasos + backlog manual)
   index.ts          Router HTTP + cron
+migrations/         Esquema D1
+```
 
 ## Nota sobre el dominio custom y JS inline
 
@@ -266,5 +303,3 @@ silencio. Por eso en `dashboard.ts` y `conectar.ts` los botones de las filas
 se conectan con `addEventListener` leyendo `data-*`/closures en vez de
 `onclick="fn(this,'...')"` con valores escapados a mano — evita el problema
 de raíz en lugar de depender de que el minificador no lo rompa.
-migrations/         Esquema D1
-```

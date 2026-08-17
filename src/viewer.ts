@@ -1,20 +1,20 @@
 // RLR
 import type { EventoRecord } from './types';
-import { escapeHtml, dossierToHtml, fechaLegibleCDMX, LOGO_SUPERLEADS } from './markdown';
-import { footerHtml, ESTILOS_FOOTER } from './branding';
+import { escapeHtml, dossierToHtml, fechaLegibleCDMX } from './markdown';
+import { headAbiertoHtml, appShellAbrir, APP_SHELL_CERRAR, footerHtml, ESTILOS_SUPERLEADS, LOGO_AZUL, LOGO_BLANCO, ICONOS } from './branding';
 import { esElegibleVcf, nombreArchivoVcf } from './vcard';
 
 function fila(etiqueta: string, valor: string | null): string {
   if (!valor) return '';
   const esLink = /^https?:\/\//.test(valor);
-  const valorHtml = esLink ? `<a href="${escapeHtml(valor)}" target="_blank" style="color:#3457d5;">${escapeHtml(valor)}</a>` : escapeHtml(valor);
-  return `<tr><td style="padding:4px 14px 4px 0;color:#9aa2b1;font-size:13px;white-space:nowrap;">${escapeHtml(etiqueta)}</td><td style="padding:4px 0;font-size:13px;color:#2b3646;">${valorHtml}</td></tr>`;
+  const valorHtml = esLink ? `<a href="${escapeHtml(valor)}" target="_blank" style="color:var(--blue);">${escapeHtml(valor)}</a>` : escapeHtml(valor);
+  return `<tr><td style="padding:4px 14px 4px 0;color:var(--dim);font-size:13px;white-space:nowrap;">${escapeHtml(etiqueta)}</td><td style="padding:4px 0;font-size:13px;color:var(--ink);">${valorHtml}</td></tr>`;
 }
 
-// Fila de la misma info pero con colores/tamaños pensados para el PDF (fondo blanco, texto navy).
+// Fila de la misma info pero pensada para el PDF (misma paleta, tamaño de impresión).
 function filaPdf(etiqueta: string, valor: string | null): string {
   if (!valor) return '';
-  return `<tr><td style="padding:5px 16px 5px 0;color:#9aa2b1;font-size:12px;white-space:nowrap;vertical-align:top;">${escapeHtml(etiqueta)}</td><td style="padding:5px 0;font-size:12px;color:#1a1a1a;word-break:break-word;">${escapeHtml(valor)}</td></tr>`;
+  return `<tr><td style="padding:5px 16px 5px 0;color:#5b6472;font-size:12px;white-space:nowrap;vertical-align:top;">${escapeHtml(etiqueta)}</td><td style="padding:5px 0;font-size:12px;color:#111827;font-weight:600;word-break:break-word;">${escapeHtml(valor)}</td></tr>`;
 }
 
 export function paginaVerDossier(evento: EventoRecord): string {
@@ -46,74 +46,67 @@ export function paginaVerDossier(evento: EventoRecord): string {
 
   return `<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(tituloBrief)} — Brief Agendado</title>
-  <style>
-    body{margin:0;background:#f4f5f7;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#2b3646;}
-    .wrap{max-width:720px;margin:0 auto;padding:32px 20px 60px;}
-    .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
-    .top a{color:#3457d5;text-decoration:none;font-size:13px;font-weight:600;}
-    .card{background:#fff;border-radius:12px;padding:32px;}
-    .eyebrow{margin:0 0 4px;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#3457d5;}
-    h1{margin:0 0 16px;font-size:22px;color:#1a2b4c;}
-    .fecha{margin:0 0 20px;font-size:13px;color:#9aa2b1;}
-    table{border-collapse:collapse;margin:0 0 24px;}
-    .acciones{margin-top:28px;padding-top:20px;border-top:1px solid #eef0f3;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-    .btn{display:inline-block;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;border:none;font-family:inherit;}
-    .btn.primary{background:#3457d5;color:#fff;}
-    .btn.secondary{background:#f0f2f6;color:#2b3646;}
-    .btn.pdf{background:#56EF9F;color:#001240;}
-    .btn:disabled{opacity:.6;cursor:default;}
-    #estadoEnvio{margin-top:10px;font-size:13px;}
-    #estadoPdf{margin-top:10px;font-size:13px;}
-    .titulo-linea{display:flex;align-items:center;gap:10px;}
-    .btn-lapiz{border:none;background:none;font-size:16px;cursor:pointer;padding:2px;line-height:1;}
-    #formEditar{display:none;background:#F4F7FF;border:.5px solid #e0e8f8;border-radius:10px;padding:20px;margin:0 0 24px;}
-    #formEditar label{display:block;font-size:12px;font-weight:600;color:#002582;margin:12px 0 4px;}
-    #formEditar label:first-of-type{margin-top:0;}
-    #formEditar input{width:100%;box-sizing:border-box;padding:9px 12px;border:.5px solid #e0e8f8;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;}
-    #formEditar input:focus{outline:none;border-color:#0039C8;}
-    .form-botones{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
-    #estadoEditar{margin-top:10px;font-size:13px;}
-    .top-acciones{display:flex;gap:8px;align-items:center;}
-    #progresoWrap{display:none;margin-top:16px;}
-    #progresoBarra-fondo{height:10px;background:#e0e8f8;border-radius:999px;overflow:hidden;}
-    #progresoBarra{height:100%;width:0%;background:linear-gradient(90deg,#0039C8,#56EF9F);border-radius:999px;transition:width .5s ease;}
-    #progresoTexto{margin-top:8px;font-size:13px;font-weight:600;color:#002582;}
-    .btn.vcf{background:#56EF9F;color:#001240;}
-    /* Links largos (Zoom, CRM, fuentes del dossier) nunca desbordan el ancho */
-    .card a{word-break:break-all;overflow-wrap:anywhere;}
-    #dossierBody{overflow-wrap:anywhere;}
-    @media(max-width:600px){
-      .wrap{padding:20px 12px 48px;}
-      .card{padding:22px 16px;}
-      .top{flex-wrap:wrap;gap:10px;}
-      /* La tabla de datos se apila: etiqueta arriba, valor abajo, sin scroll lateral */
-      .card > table, .card > table tbody, .card > table tr, .card > table td{display:block;width:100%;}
-      .card > table td{padding:1px 0 !important;white-space:normal !important;}
-      .card > table tr{padding:5px 0;}
-      .acciones .btn{flex:1 1 auto;text-align:center;justify-content:center;}
-    }
-    ${ESTILOS_FOOTER}
-  </style>
+${headAbiertoHtml(`${tituloBrief} — Brief Rayos X · SuperLeads`)}
+<style>
+  ${ESTILOS_SUPERLEADS}
+
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
+  .top a.volver{color:var(--blue);text-decoration:none;font-size:13px;font-weight:600;}
+  .top-acciones{display:flex;gap:8px;align-items:center;}
+
+  .card{background:#fff;border:.5px solid var(--border);border-radius:12px;padding:32px;box-shadow:var(--shadow-sm);}
+  .titulo-linea{display:flex;align-items:center;gap:10px;}
+  .titulo-linea h1{margin:0;}
+  .btn-lapiz{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:var(--blue-softer);color:var(--blue);cursor:pointer;padding:0;flex-shrink:0;transition:background-color .2s,color .2s;}
+  .btn-lapiz:hover{background:var(--blue);color:#fff;}
+  .fecha-brief{margin:6px 0 20px;font-size:13px;color:var(--dim);}
+  table{border-collapse:collapse;margin:0 0 24px;}
+
+  #formEditar{display:none;background:var(--blue-soft);border:.5px solid var(--border);border-radius:10px;padding:20px;margin:0 0 24px;}
+  #formEditar label{display:block;font-size:12px;font-weight:600;color:var(--navy);margin:12px 0 4px;}
+  #formEditar label:first-of-type{margin-top:0;}
+  #formEditar input{width:100%;box-sizing:border-box;padding:9px 12px;border:.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;}
+  #formEditar input:focus{outline:none;border-color:var(--blue);}
+  .form-botones{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  #estadoEditar{margin-top:10px;font-size:13px;}
+
+  #progresoWrap{display:none;margin-top:16px;}
+  #progresoBarra-fondo{height:10px;background:var(--border);border-radius:999px;overflow:hidden;}
+  #progresoBarra{height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px;transition:width .5s ease;}
+  #progresoTexto{margin-top:8px;font-size:13px;font-weight:600;color:var(--navy);}
+
+  .acciones{margin-top:28px;padding-top:20px;border-top:.5px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  #estadoEnvio,#estadoPdf{margin-top:10px;font-size:13px;font-weight:600;}
+
+  /* Links largos (Zoom, CRM, fuentes del dossier) nunca desbordan el ancho */
+  .card a{word-break:break-all;overflow-wrap:anywhere;}
+  #dossierBody{overflow-wrap:anywhere;}
+
+  @media(max-width:600px){
+    .card{padding:22px 16px;}
+    .card > table, .card > table tbody, .card > table tr, .card > table td{display:block;width:100%;}
+    .card > table td{padding:1px 0 !important;white-space:normal !important;}
+    .card > table tr{padding:5px 0;}
+    .acciones .btn{flex:1 1 auto;text-align:center;justify-content:center;}
+  }
+</style>
 </head>
 <body>
-  <div class="wrap">
+  ${appShellAbrir('historial')}
     <div class="top">
-      <a href="/">← Volver al dashboard</a>
+      <a class="volver" href="/">← Volver al historial</a>
       <div class="top-acciones">
-        <button class="btn pdf" onclick="generarPDF(this)">Descargar PDF</button>
-        <a class="btn secondary" href="/eventos/${encodeURIComponent(evento.uid)}/dossier">Descargar .md</a>
+        <button class="btn btn-navy" onclick="generarPDF(this)">${ICONOS.descargar} Descargar PDF</button>
+        <a class="btn btn-outline" href="/eventos/${encodeURIComponent(evento.uid)}/dossier">${ICONOS.descargar} Descargar .md</a>
       </div>
     </div>
     <div class="card">
-      <p class="eyebrow">Pre-Rayos X de Inscripciones</p>
+      <div class="page-eyebrow"><span>Pre-Rayos X de Inscripciones</span></div>
       <div class="titulo-linea">
         <h1>${escapeHtml(tituloBrief)}</h1>
-        <button class="btn-lapiz" id="btnLapiz" title="Editar datos del prospecto">✏️</button>
+        <button class="btn-lapiz" id="btnLapiz" title="Editar datos del prospecto">${ICONOS.lapiz}</button>
       </div>
-      <p class="fecha">${fecha}</p>
+      <p class="fecha-brief">${fecha}</p>
 
       <div id="formEditar">
         <label>Institución<input id="e_institucion" value="${escapeHtml(evento.institucion || '')}"></label>
@@ -123,8 +116,8 @@ export function paginaVerDossier(evento: EventoRecord): string {
         <label>Correo<input id="e_correo" value="${escapeHtml(evento.representante_correo || '')}"></label>
         <label>WhatsApp<input id="e_whatsapp" value="${escapeHtml(evento.representante_whatsapp || '')}"></label>
         <div class="form-botones">
-          <button class="btn secondary" id="btnGuardar">Guardar</button>
-          <button class="btn primary" id="btnRegenerar">Guardar y generar nuevo brief</button>
+          <button class="btn btn-outline" id="btnGuardar">Guardar</button>
+          <button class="btn btn-primary" id="btnRegenerar">Guardar y regenerar brief</button>
         </div>
         <div id="progresoWrap">
           <div id="progresoBarra-fondo"><div id="progresoBarra"></div></div>
@@ -137,32 +130,48 @@ export function paginaVerDossier(evento: EventoRecord): string {
       <div id="dossierBody">${cuerpo}</div>
 
       <div class="acciones">
-        <button class="btn primary" id="btnEnviar" data-correo="${escapeHtml(evento.destinatario_email || '')}" onclick="mandarCorreo(this)">Mandar correo con este resumen</button>
-        <button class="btn pdf" id="btnPdf" onclick="generarPDF(this)">Descargar PDF</button>
-        ${esElegibleVcf(evento) ? `<a class="btn vcf" href="/eventos/${encodeURIComponent(evento.uid)}/vcard" download="${escapeHtml(nombreArchivoVcf(evento))}">👤 Guardar contacto</a>` : ''}
-        <a class="btn secondary" href="/eventos/${encodeURIComponent(evento.uid)}/dossier">Descargar .md</a>
+        <button class="btn btn-primary" id="btnEnviar" data-correo="${escapeHtml(evento.destinatario_email || '')}" onclick="mandarCorreo(this)">${ICONOS.correo} Mandar correo con este resumen</button>
+        <button class="btn btn-navy" id="btnPdf" onclick="generarPDF(this)">${ICONOS.descargar} Descargar PDF</button>
+        ${esElegibleVcf(evento) ? `<a class="btn btn-outline" href="/eventos/${encodeURIComponent(evento.uid)}/vcard" download="${escapeHtml(nombreArchivoVcf(evento))}">${ICONOS.contacto} Guardar contacto</a>` : ''}
+        <a class="btn btn-outline" href="/eventos/${encodeURIComponent(evento.uid)}/dossier">${ICONOS.descargar} Descargar .md</a>
       </div>
       <div id="estadoEnvio"></div>
       <div id="estadoPdf"></div>
     </div>
-  </div>
+  ${APP_SHELL_CERRAR}
   ${footerHtml()}
 
-  <!-- Plantilla oculta, con estilo SuperLeads, que se captura para armar el PDF -->
-  <div id="pdfTarget" style="position:fixed;left:-99999px;top:0;width:794px;background:#fff;font-family:'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;">
-    <div style="background:#001240;padding:28px 40px;">
-      <img src="${LOGO_SUPERLEADS}" crossorigin="anonymous" style="width:150px;display:block;">
-      <p style="margin:20px 0 4px;font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#56EF9F;">Pre-Rayos X de Inscripciones</p>
-      <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;">${escapeHtml(tituloBrief)}</h1>
-      <p style="margin:0;font-size:11.5px;color:#7a9fd4;">${fecha}</p>
+  <!-- ═══ Plantillas ocultas para armar el PDF (html2canvas + jsPDF) ═══
+       Tamaño Carta (216×279mm) con portada + páginas interiores con folio,
+       según la anatomía de documento de la guía de estilos SuperLeads. -->
+
+  <!-- Portada: logo blanco, institución, fecha, confidencialidad — sin folio -->
+  <div id="pdfPortada" style="position:fixed;left:-99999px;top:0;width:816px;height:1054px;background:#001240;font-family:'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;padding:76px 60px;box-sizing:border-box;display:flex;flex-direction:column;">
+    <img src="${LOGO_BLANCO}" style="width:196px;display:block;">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#56EF9F;">Pre-Rayos X de Inscripciones</p>
+      <h1 style="margin:0 0 14px;font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1.15;">${escapeHtml(tituloBrief)}</h1>
+      <p style="margin:0;font-size:13px;color:#7a9fd4;">${fecha}</p>
     </div>
-    <div style="padding:28px 40px;">
-      <table style="border-collapse:collapse;margin:0 0 22px;">${datosPdf}</table>
-      <div id="dossierBodyPdf" style="font-size:12px;line-height:1.6;color:#1a1a1a;"></div>
+    <p style="margin:0;font-size:9px;color:#4a6aaa;">Confidencial — Uso interno SuperLeads</p>
+  </div>
+
+  <!-- Plantillas de header/footer interior + fuente de contenido (tabla de
+       datos + dossier). Todo fuera del flujo normal (position:fixed) para
+       que no agreguen scroll fantasma en blanco al final de la página. -->
+  <div style="position:fixed;left:-99999px;top:0;">
+    <div id="pdfInteriorHeaderTpl" style="width:696px;padding-bottom:12px;border-bottom:1px solid #d8dce4;display:flex;align-items:center;justify-content:space-between;font-family:'Plus Jakarta Sans',sans-serif;">
+      <img src="${LOGO_AZUL}" style="width:104px;display:block;">
+      <span style="font-size:9.5px;font-weight:600;letter-spacing:.04em;color:#5b6472;text-transform:uppercase;">Brief Rayos X — ${escapeHtml(evento.institucion || tituloBrief)}</span>
     </div>
-    <div style="padding:16px 40px;border-top:.5px solid #e0e8f8;">
-      <p style="margin:0;font-size:9.5px;color:#aaa;">Generado automáticamente por Brief Agendado — SuperLeads · <span id="pdfFechaGeneracion"></span></p>
+    <div id="pdfInteriorFooterTpl" style="width:696px;padding-top:10px;border-top:1px solid #d8dce4;display:flex;align-items:center;justify-content:space-between;font-family:'Plus Jakarta Sans',sans-serif;">
+      <span style="font-size:8.5px;color:#5b6472;">${escapeHtml(evento.institucion || tituloBrief)} · ${fecha}</span>
+      <span class="pdf-folio" style="font-size:9px;color:#98a1b0;"></span>
     </div>
+    <div id="pdfDatosWrap" style="width:696px;font-family:'Plus Jakarta Sans',sans-serif;">
+      <table style="border-collapse:collapse;margin:0 0 4px;">${datosPdf}</table>
+    </div>
+    <div id="dossierBodyPdf" style="width:696px;font-size:13px;line-height:1.6;color:#111827;font-family:'Plus Jakarta Sans',sans-serif;"></div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -177,18 +186,18 @@ export function paginaVerDossier(evento: EventoRecord): string {
         const r = await fetch('/eventos/${encodeURIComponent(evento.uid)}/enviar', { method: 'POST' });
         const data = await r.json();
         if (data.ok) {
-          estado.style.color = '#1e7e34';
+          estado.style.color = 'var(--ok)';
           estado.textContent = '✓ Correo enviado.';
         } else {
-          estado.style.color = '#c0392b';
-          estado.textContent = '✗ ' + (data.error || 'No se pudo enviar.');
+          estado.style.color = 'var(--destructive)';
+          estado.textContent = '✗ No se pudo enviar el correo. Intenta de nuevo o descarga el PDF y compártelo directo.';
         }
       } catch (e) {
-        estado.style.color = '#c0392b';
-        estado.textContent = '✗ Error de red al enviar.';
+        estado.style.color = 'var(--destructive)';
+        estado.textContent = '✗ No se pudo enviar el correo. Intenta de nuevo o descarga el PDF y compártelo directo.';
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Mandar correo con este resumen';
+        btn.innerHTML = '${ICONOS.correo} Mandar correo con este resumen';
       }
     }
 
@@ -198,26 +207,31 @@ export function paginaVerDossier(evento: EventoRecord): string {
       return d.getFullYear() + '_' + pad(d.getMonth()+1) + '_' + pad(d.getDate()) + '-' + pad(d.getHours()) + '_' + pad(d.getMinutes());
     }
 
-    const PDF_PAGE_W = 794;
-    const PDF_PAGE_H = Math.round(PDF_PAGE_W * 297 / 210); // proporción A4
+    // Tamaño Carta (216×279mm a 96dpi) — la guía de documentos SuperLeads usa
+    // Carta, nunca A4. Ancho de contenido 696px ≈ 184mm (márgenes 60px≈16mm).
+    const PDF_PAGE_W = 816;
+    const PDF_PAGE_H = Math.round(PDF_PAGE_W * 279 / 216);
+    const PDF_MARGIN_X = 60;
 
     // Agrupa los bloques del dossier en páginas sin cortar ninguno a la mitad
     // (cada párrafo/lista/encabezado es un bloque atómico). Además, un
     // encabezado nunca se queda solo al pie de página: si no cabe junto con
     // el bloque que le sigue, ambos se empujan a la página siguiente.
-    function paginarBloques(blocks) {
+    // presupuestoAlto: espacio disponible por página, descontando ya el
+    // header/footer interiores fijos.
+    function paginarBloques(blocks, presupuestoAlto) {
       const pages = [[]];
       let alto = 0;
       for (let i = 0; i < blocks.length; i++) {
         const b = blocks[i];
-        const h = b.el.getBoundingClientRect().height;
-        const esEncabezado = b.el.dataset && b.el.dataset.h === '1';
+        const h = b.getBoundingClientRect().height;
+        const esEncabezado = b.dataset && b.dataset.h === '1';
         let necesario = h;
         if (esEncabezado && blocks[i + 1]) {
-          necesario += blocks[i + 1].el.getBoundingClientRect().height;
+          necesario += blocks[i + 1].getBoundingClientRect().height;
         }
-        const disponible = PDF_PAGE_H - alto;
-        if (alto > 0 && necesario > disponible && h <= PDF_PAGE_H) {
+        const disponible = presupuestoAlto - alto;
+        if (alto > 0 && necesario > disponible && h <= presupuestoAlto) {
           pages.push([]);
           alto = 0;
         }
@@ -227,92 +241,78 @@ export function paginaVerDossier(evento: EventoRecord): string {
       return pages;
     }
 
-    function construirPagina(items) {
-      const cont = document.createElement('div');
-      cont.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + PDF_PAGE_W + 'px;background:#fff;font-family:"Plus Jakarta Sans",-apple-system,Segoe UI,Roboto,sans-serif;';
-
-      let i = 0;
-      if (items[i] && items[i].kind === 'header') {
-        cont.appendChild(items[i].el.cloneNode(true));
-        i++;
-      }
-
-      const bodyItems = [];
-      let footerItem = null;
-      for (; i < items.length; i++) {
-        if (items[i].kind === 'footer') footerItem = items[i];
-        else bodyItems.push(items[i]);
-      }
-      if (bodyItems.length) {
-        const wrap = document.createElement('div');
-        wrap.style.padding = cont.childNodes.length ? '28px 40px' : '32px 40px 8px';
-        for (const b of bodyItems) wrap.appendChild(b.el.cloneNode(true));
-        cont.appendChild(wrap);
-      }
-      if (footerItem) cont.appendChild(footerItem.el.cloneNode(true));
-
-      document.body.appendChild(cont);
-      return cont;
-    }
-
     async function generarPDF(btn) {
       const estado = document.getElementById('estadoPdf');
       btn.disabled = true;
-      const original = btn.textContent;
+      const original = btn.innerHTML;
       btn.textContent = 'Generando PDF...';
-      estado.style.color = '#5b6472';
+      estado.style.color = 'var(--muted)';
       estado.textContent = '';
 
       const temporales = [];
       try {
-        // Clona el dossier renderizado hacia la plantilla oculta con estilo SuperLeads
         document.getElementById('dossierBodyPdf').innerHTML = document.getElementById('dossierBody').innerHTML;
-        document.getElementById('pdfFechaGeneracion').textContent = new Date().toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' });
 
-        const target = document.getElementById('pdfTarget');
-        const headerEl = target.children[0];
-        const bodyWrap = target.children[1];
-        const footerEl = target.children[2];
-        const tableEl = bodyWrap.children[0];
-        const dossierWrap = bodyWrap.children[1];
+        // 1) Portada — siempre 1 página, tamaño Carta completo.
+        const portada = document.getElementById('pdfPortada');
+        const portadaCanvas = await html2canvas(portada, { scale: 2, backgroundColor: '#001240', useCORS: true });
 
-        const blocks = [
-          { el: headerEl, kind: 'header' },
-          { el: tableEl, kind: 'body' },
-          ...Array.from(dossierWrap.children).map(el => ({ el: el, kind: 'body' })),
-          { el: footerEl, kind: 'footer' },
-        ];
+        // 2) Bloques de contenido interior: tabla de datos + dossier.
+        const datosWrap = document.getElementById('pdfDatosWrap');
+        const dossierWrap = document.getElementById('dossierBodyPdf');
+        const bloques = [datosWrap, ...Array.from(dossierWrap.children)];
 
-        const paginas = paginarBloques(blocks);
+        // Presupuesto vertical por página interior = alto de página − header − footer − paddings.
+        const headerAlto = document.getElementById('pdfInteriorHeaderTpl').getBoundingClientRect().height;
+        const footerAlto = document.getElementById('pdfInteriorFooterTpl').getBoundingClientRect().height;
+        const presupuesto = PDF_PAGE_H - headerAlto - footerAlto - 76 - 40; // 76 top margin, 40 aire entre bloques y chrome
+        const paginas = paginarBloques(bloques, presupuesto);
+        const totalPaginas = paginas.length;
 
-        // Primero arma y captura cada página (sin construir el PDF todavía, para
-        // conocer la altura real de cada una antes de crear el documento).
-        const capturas = [];
-        for (const items of paginas) {
-          const cont = construirPagina(items);
+        const capturasInterior = [];
+        for (let i = 0; i < paginas.length; i++) {
+          const cont = document.createElement('div');
+          cont.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + PDF_PAGE_W + 'px;min-height:' + PDF_PAGE_H + 'px;background:#fff;font-family:"Plus Jakarta Sans",sans-serif;padding:38px ' + PDF_MARGIN_X + 'px;box-sizing:border-box;display:flex;flex-direction:column;';
+
+          const header = document.getElementById('pdfInteriorHeaderTpl').cloneNode(true);
+          header.style.width = '100%';
+          cont.appendChild(header);
+
+          const body = document.createElement('div');
+          body.style.cssText = 'flex:1;padding-top:26px;';
+          for (const b of paginas[i]) body.appendChild(b.cloneNode(true));
+          cont.appendChild(body);
+
+          const footer = document.getElementById('pdfInteriorFooterTpl').cloneNode(true);
+          footer.style.width = '100%';
+          footer.querySelector('.pdf-folio').textContent = (i + 1) + ' / ' + totalPaginas;
+          cont.appendChild(footer);
+
+          document.body.appendChild(cont);
           temporales.push(cont);
-          const alto = cont.offsetHeight;
-          const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-          capturas.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.92), alto: alto });
+
+          const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true, windowWidth: PDF_PAGE_W });
+          capturasInterior.push(canvas);
         }
 
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: 'px', format: [PDF_PAGE_W, capturas[0].alto], hotfixes: ['px_scaling'] });
-        capturas.forEach((cap, idx) => {
-          if (idx > 0) pdf.addPage([PDF_PAGE_W, cap.alto]);
-          pdf.addImage(cap.dataUrl, 'JPEG', 0, 0, PDF_PAGE_W, cap.alto);
-        });
+        const pdf = new jsPDF({ unit: 'px', format: [PDF_PAGE_W, PDF_PAGE_H], hotfixes: ['px_scaling'] });
+        pdf.addImage(portadaCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, PDF_PAGE_W, PDF_PAGE_H);
+        for (const canvas of capturasInterior) {
+          pdf.addPage([PDF_PAGE_W, PDF_PAGE_H]);
+          pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, PDF_PAGE_W, PDF_PAGE_H);
+        }
 
         pdf.save('brief-${nombreSlug}-' + timestampArchivo() + '.pdf');
-        estado.style.color = '#1e7e34';
+        estado.style.color = 'var(--ok)';
         estado.textContent = '✓ PDF descargado.';
       } catch (e) {
-        estado.style.color = '#c0392b';
-        estado.textContent = '✗ No se pudo generar el PDF: ' + (e && e.message ? e.message : 'error desconocido');
+        estado.style.color = 'var(--destructive)';
+        estado.textContent = '✗ No se pudo generar el PDF. Vuelve a intentar — si se repite, copia el link de esta página y avísale a Ricardo.';
       } finally {
         temporales.forEach(n => n.remove());
         btn.disabled = false;
-        btn.textContent = original;
+        btn.innerHTML = original;
       }
     }
 
@@ -345,15 +345,15 @@ export function paginaVerDossier(evento: EventoRecord): string {
 
     document.getElementById('btnGuardar').addEventListener('click', async () => {
       const estado = document.getElementById('estadoEditar');
-      estado.style.color = '#5b6472';
+      estado.style.color = 'var(--muted)';
       estado.textContent = 'Guardando...';
       try {
         await guardarDatos();
-        estado.style.color = '#1e7e34';
+        estado.style.color = 'var(--ok)';
         estado.textContent = '✓ Datos guardados. Recargando...';
         location.href = '/eventos/${encodeURIComponent(evento.uid)}/ver';
       } catch (e) {
-        estado.style.color = '#c0392b';
+        estado.style.color = 'var(--destructive)';
         estado.textContent = '✗ ' + e.message;
       }
     });
@@ -394,10 +394,10 @@ export function paginaVerDossier(evento: EventoRecord): string {
       const texto = document.getElementById('progresoTexto');
       if (ok) {
         barra.style.width = '100%';
-        texto.style.color = '#1e7e34';
+        texto.style.color = 'var(--ok)';
       } else {
-        barra.style.background = '#c0392b';
-        texto.style.color = '#c0392b';
+        barra.style.background = 'var(--destructive)';
+        texto.style.color = 'var(--destructive)';
       }
       texto.textContent = mensaje;
     }

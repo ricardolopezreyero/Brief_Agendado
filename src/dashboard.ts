@@ -1,5 +1,5 @@
 // RLR
-import { headAbiertoHtml, heroHeader, footerHtml, ESTILOS_SUPERLEADS } from './branding';
+import { headAbiertoHtml, appShellAbrir, APP_SHELL_CERRAR, pageHeader, footerHtml, ESTILOS_SUPERLEADS, ICONOS } from './branding';
 
 export function paginaDashboard(): string {
   return `<!doctype html>
@@ -11,15 +11,13 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
   .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
   .toolbar input{padding:10px 14px;border:.5px solid var(--border);border-radius:8px;font-size:13.5px;font-family:inherit;min-width:260px;background:#fff;}
   .toolbar input:focus{outline:none;border-color:var(--blue);}
-  .toolbar a.btn-manual{margin-left:auto;padding:10px 16px;border-radius:8px;background:var(--green);color:var(--navy);text-decoration:none;font-size:13px;font-weight:700;}
-  .toolbar a.btn-manual:hover{background:var(--green-d);}
 
   .chips{display:flex;gap:8px;}
   .chip{border:.5px solid var(--border);background:#fff;border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;}
   .chip.activo{border-color:var(--navy);background:var(--navy);color:#fff;}
 
   .btn-estado{border:none;background:none;font-size:15px;cursor:pointer;padding:2px;line-height:1;}
-  .btn-lapiz{color:var(--dim);text-decoration:none;font-size:13px;margin-left:6px;}
+  .btn-lapiz{display:inline-flex;align-items:center;color:var(--dim);text-decoration:none;margin-left:6px;}
   .btn-lapiz:hover{color:var(--blue);}
 
   .card{background:#fff;border:.5px solid var(--border);border-radius:12px;overflow:auto;}
@@ -57,10 +55,9 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
      el ancho de la pantalla sin scroll horizontal. Los botones de acciones
      usan flex-wrap y pueden acomodarse en dos filas si hace falta. */
   @media(max-width:760px){
-    .wrap.ancho{padding:16px 12px 60px;}
+    .app-main.ancho{padding:16px 12px 48px;}
     .card{overflow:visible;border-radius:10px;}
     .toolbar input{min-width:0;width:100%;}
-    .toolbar a.btn-manual{margin-left:0;width:100%;text-align:center;}
     .chips{flex-wrap:wrap;}
     table, thead, tbody, tr, th, td{display:block;width:100%;}
     thead{display:none;}
@@ -74,14 +71,8 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
 </style>
 </head>
 <body>
-  ${heroHeader({
-    eyebrow: 'Brief Agendado',
-    titulo: 'Dashboard',
-    subtitulo: 'Histórico de citas Rayos X: research, destinatario y estado de envío. <a href="/conectar">Conectar mi calendario →</a>',
-    ancho: true,
-    compacto: true,
-  })}
-  <div class="wrap ancho">
+  ${appShellAbrir('historial', { ancho: true })}
+    ${pageHeader('Brief Agendado', 'Historial de Rayos X', 'Todas las citas Rayos X detectadas desde tu calendario, más recientes primero.')}
     <div class="toolbar">
       <input id="buscar" type="text" placeholder="Buscar por institución, representante o correo...">
       <div class="chips">
@@ -89,7 +80,6 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
         <button class="chip" data-filtro="verde">🟢 Próximos</button>
         <button class="chip" data-filtro="rojo">🔴 Pasados</button>
       </div>
-      <a class="btn-manual" href="/manual">＋ Generar brief manual</a>
     </div>
     <div class="card">
       <table id="tabla">
@@ -111,9 +101,11 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
       </table>
       <div id="empty" style="display:none;">Sin citas todavía.</div>
     </div>
-  </div>
+  ${APP_SHELL_CERRAR}
   ${footerHtml()}
   <script>
+    const ICONO_LAPIZ = '${ICONOS.lapiz}';
+    const ICONO_CONTACTO = '${ICONOS.contacto}';
     function fechaCDMX(iso) {
       if (!iso) return '—';
       const d = new Date(new Date(iso).getTime() - 6*60*60*1000);
@@ -200,7 +192,7 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
           lapiz.href = '/eventos/' + uidEnc + '/ver?editar=1';
           lapiz.target = '_blank';
           lapiz.title = 'Editar datos del prospecto';
-          lapiz.textContent = '✏️';
+          lapiz.innerHTML = ICONO_LAPIZ;
           tdRep.firstChild ? tdRep.insertBefore(lapiz, tdRep.querySelector('.muted')) : tdRep.appendChild(lapiz);
         }
         tr.appendChild(tdRep);
@@ -254,7 +246,7 @@ ${headAbiertoHtml('Brief Agendado — Dashboard')}
           vcfA.className = 'dl vcf';
           vcfA.href = '/eventos/' + uidEnc + '/vcard';
           vcfA.title = 'Descargar contacto (vCard)';
-          vcfA.textContent = '👤 Contacto';
+          vcfA.innerHTML = ICONO_CONTACTO + ' Contacto';
           accionesWrap.appendChild(vcfA);
         }
         tdAcciones.appendChild(accionesWrap);

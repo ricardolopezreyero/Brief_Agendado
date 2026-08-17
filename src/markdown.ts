@@ -1,5 +1,8 @@
 // RLR
-export const LOGO_SUPERLEADS = 'https://assets.cdn.filesafe.space/E6Gh1sE1RnPtadmL7wmG/media/698e530bc08665d629146a14.png';
+// Logos oficiales SVG de la guía de estilos SuperLeads (383×68px) — azul para
+// fondos claros, blanco para fondos oscuros/navy. El PNG viejo queda deprecado.
+export const LOGO_AZUL = 'https://assets.cdn.filesafe.space/E6Gh1sE1RnPtadmL7wmG/media/69cde95ac859395cde4752e3.svg';
+export const LOGO_BLANCO = 'https://assets.cdn.filesafe.space/E6Gh1sE1RnPtadmL7wmG/media/69cde95a69eb1fa3e7917e1d.svg';
 
 export function escapeHtml(s: string): string {
   return s
@@ -13,14 +16,14 @@ export function escapeHtml(s: string): string {
 function inlineMd(s: string): string {
   let out = escapeHtml(s);
   out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  out = out.replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" style="color:#3457d5;">$1</a>');
+  out = out.replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" style="color:#0039C8;">$1</a>');
   return out;
 }
 
 // Los dos mensajes de marca que van SIEMPRE al final de cualquier dossier,
 // justo antes de la sección de fuentes — sin depender de lo que redacte
 // DeepSeek. Están duplicados aquí (en vez de importarlos de branding.ts)
-// porque branding.ts ya importa de este archivo (LOGO_SUPERLEADS); mismo
+// porque branding.ts ya importa de este archivo (LOGO_AZUL/LOGO_BLANCO); mismo
 // texto exacto que el footer del sitio, ver branding.ts.
 const WHY_SUPERLEADS_MD = 'Creemos que ningún alumno debería perder la oportunidad de estudiar en el colegio correcto por culpa de un mal proceso de admisión, y que los colegios deben ser rentables para poder cumplir su misión educativa.';
 const PROPOSITO_SL_MD = 'Darle Poder a las escuelas para que inscriban fácilmente a millones de estudiantes.';
@@ -79,18 +82,18 @@ export function dossierToHtml(md: string): string {
     const img = line.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/);
     if (line.startsWith('## ')) {
       flushParagraph(); flushList();
-      blocks.push(`<p data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#1a2b4c;border-bottom:1px solid #eef0f3;padding-bottom:6px;">${escapeHtml(line.slice(3))}</p>`);
+      blocks.push(`<h2 data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#002582;border-bottom:.5px solid #e0e8f8;padding-bottom:6px;">${escapeHtml(line.slice(3))}</h2>`);
     } else if (img) {
       // Imagen de markdown en su propia línea (sección "Fotos relevantes")
       flushParagraph(); flushList();
-      blocks.push(`<figure style="margin:0 0 14px;display:inline-block;vertical-align:top;width:48%;margin-right:2%;"><img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}" style="width:100%;border-radius:8px;display:block;"><figcaption style="font-size:11px;color:#9aa2b1;margin-top:4px;line-height:1.4;">${escapeHtml(img[1])}</figcaption></figure>`);
+      blocks.push(`<figure style="margin:0 0 14px;display:inline-block;vertical-align:top;width:48%;margin-right:2%;"><img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}" style="width:100%;border-radius:8px;display:block;"><figcaption style="font-size:11px;color:#98a1b0;margin-top:4px;line-height:1.4;">${escapeHtml(img[1])}</figcaption></figure>`);
     } else if (line.startsWith('(Encontrada en:')) {
       // Pie de foto con la página de origen — va pegado a la figura anterior
       const urlFuente = line.match(/https?:\/\/[^\s)]+/)?.[0];
       if (urlFuente && blocks.length && blocks[blocks.length - 1].startsWith('<figure')) {
         blocks[blocks.length - 1] = blocks[blocks.length - 1].replace(
           '</figcaption></figure>',
-          ` · <a href="${escapeHtml(urlFuente)}" style="color:#3457d5;">fuente</a></figcaption></figure>`,
+          ` · <a href="${escapeHtml(urlFuente)}" style="color:#0039C8;">fuente</a></figcaption></figure>`,
         );
       }
     } else if (line.startsWith('- ')) {
