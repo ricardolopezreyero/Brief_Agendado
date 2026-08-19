@@ -37,7 +37,7 @@ export const ESTILOS_FOOTER = `
   .footer-why-item .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:20px;background:rgba(86,239,159,.1);color:var(--green);border:.5px solid rgba(86,239,159,.25);margin-bottom:8px;}
   .footer-why-item p.txt{margin:0;font-size:12.5px;line-height:1.65;color:#7a9fd4;}
   .footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-  .footer-bottom img{width:110px;display:block;opacity:.9;}
+  .footer-bottom img{width:110px;display:block;}
   .footer-bottom p{margin:0;font-size:11px;color:#4a6aaa;}
   @media(max-width:600px){
     .footer-why{grid-template-columns:1fr;gap:18px;}
@@ -63,6 +63,24 @@ export const ESTILOS_SUPERLEADS = `
     --shadow-cta: 0 10px 28px rgba(86,239,159,.28);
   }
   *{box-sizing:border-box;}
+
+  /* ── Movimiento reducido (guía §Accesibilidad) ──
+     Obligatorio, no opcional: para alguien con vértigo o migraña vestibular una
+     animación provoca mareo real. Cuidamos el movimiento, así que hay que poder
+     apagarlo.
+     Los cambios de COLOR se mantienen a propósito: son información (un hover que
+     indica "esto se puede tocar"), no decoración. Lo que se apaga es lo que se
+     desplaza y lo que se anima en bucle. */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation-duration:.01ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.01ms !important;
+      scroll-behavior:auto !important;
+    }
+    /* Sin el lift, un botón "presionado" no se distingue: el color sigue vivo. */
+    .btn:hover,.card:hover{transform:none !important;}
+  }
   body{margin:0;background:var(--blue-soft);font-family:"Plus Jakarta Sans",-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);font-size:14px;line-height:1.78;-webkit-font-smoothing:antialiased;}
 
   /* ── Botones (guía §Componentes) ── */
