@@ -86,53 +86,56 @@ Si necesitas citar una cifra de SuperLeads (no del prospecto), la única vigente
 - Todo número lleva unidad y contexto ("4.52% de conversión de prospecto a inscrito", nunca "4.52%" solo). Si es aproximado, dilo: "alrededor de", "estimado".
 - Cuando no haya dato para un campo puntual (ej. seguidores, fuente), usa un guion largo "—". Nunca "no encontrado", nunca "N/A", nunca "0" cuando el 0 no está confirmado.
 
-Responde en markdown con EXACTAMENTE estas secciones, en este orden:
+═══ LÍMITES DE EXTENSIÓN (no negociables) ═══
 
-## Resumen Brief Pre Rayos X Inscripciones
-Va primero, antes que nada — es lo único que un comercial apurado necesita leer antes de entrar a la reunión, sin tener que leer el resto del brief (el resto sigue completo abajo, es para quien sí quiera leerlo con calma, incluido el propio prospecto si lo comparten). De 3 a 8 bullets ultra-condensados, uno por línea, cada uno el dato solo — sin la explicación ni el desarrollo que ya está en las secciones de abajo. Solo entra aquí lo súper relevante para la reunión: antigüedad de la institución, tamaño de matrícula, si tiene o no presencia digital activa, calificación/número de reseñas, si aparece o no en buscadores, el score de fit ICP, el hallazgo más accionable del cruce con el ICP — cualquier otro dato del mismo calibre si lo hay. Un bullet por dato, formato "**Campo**: valor" (ej. "**Matrícula**: 2,000 alumnos", "**Presencia digital**: sin redes sociales oficiales", "**Buscadores**: no aparece en los primeros 10 resultados", "**Score de fit ICP**: 7/10"). Incluye solo los que sí tengan dato real detrás — nunca escribas un bullet diciendo "no se encontró X" ni rellenes para llegar a un número; si el prospecto trae poca información, este bloque sale corto, y está bien así.
+El brief entero cabe en TRES páginas. Antes iba en ocho y nadie lo leía completo.
 
-## Resumen ejecutivo
-Máximo 3 frases. Abre con el hecho más accionable que tengas — si hay un número que cambia la lectura de la reunión (posición en buscadores, calificación pública, un dato del ICP), va primero. Nada de frases de calentamiento tipo "En esta sección analizamos...".
+- Ninguna sección pasa de 100 palabras.
+- Ningún bullet pasa de una línea: máximo 14 palabras.
+- Ningún párrafo pasa de dos líneas.
+- Cero frases de calentamiento ("En esta sección...", "Es importante notar...").
+- Cero repetir un dato que ya diste arriba. Si ya está, no vuelve.
+- Sección sin dato real: UNA línea diciéndolo. Nunca se rellena para ocupar espacio.
 
-## El colegio
-Qué se sabe: tipo de institución, tamaño aparente, ubicación, niveles educativos, propuesta de valor visible. Reconoce primero lo que el colegio sí tiene resuelto o hace bien, si es visible en las fuentes — antes de pasar a cualquier señal de alerta. Frases cortas, sin relleno.
+Estructura y tono siguen la guía de estilos de SuperLeads (guia-estilos.superleads.mx):
+títulos numerados con "·", voz activa, el dato antes del adjetivo, tablas y bullets
+antes que prosa. Nada de "quizás" ni "aproximadamente": o hay dato o no hay.
 
-## Redes sociales
-Si en "Redes sociales detectadas en el sitio oficial" te dieron links, repórtalos tal cual (son confiables, vienen del propio sitio) y agrega el número de seguidores SOLO si aparece explícitamente en los resultados de búsqueda (con fuente). Si no encontraste ninguna red social oficial, escribe "No se encontraron redes sociales oficiales". Nunca inventes un número de seguidores.
-Una red social por línea, SIEMPRE como bullet de markdown (empieza con "- "), nunca como párrafo corrido:
-- **Plataforma**: URL — seguidores: N (Fuente: URL)
-- **Otra plataforma**: URL — seguidores: —
+Responde en markdown con EXACTAMENTE estas siete secciones, con el título literal y en este orden:
 
-## Posicionamiento en buscadores
-Te doy mediciones EXACTAS en "Datos medidos de posicionamiento" (posición del sitio del colegio al buscar su nombre, y al buscar colegios privados en su ciudad). Repórtalas TAL CUAL, sin cambiarlas ni inventar otras, una por bullet. Di siempre "en buscadores" o "en resultados de búsqueda" — NUNCA lo atribuyas a Google específicamente (la medición viene de un buscador web independiente).
-Cierra con 1-2 frases de lectura comercial, en el tono de la casa — el dato primero, la lectura después:
-- Si el colegio NO aparece cuando una familia busca "colegios privados en su ciudad": nombra el hecho sin dramatizarlo y sin culpar a nadie del colegio — no es un caso aislado, la mayoría de los colegios trae este mismo tema sin haberlo sistematizado nunca. Esa invisibilidad es exactamente el tipo de fuga de prospectos que SuperLeads corrige.
-- Si aparece bien posicionado: el ángulo es convertir ese tráfico que ya llega en inscripciones — el problema entonces no es de visibilidad, es de seguimiento.
-- Si no hubo mediciones (sin sitio web o sin ciudad inferida), dilo así, en una frase, sin relleno.
+## 1 · Antes de entrar
+Lo único que se lee corriendo, minutos antes de la reunión. De 4 a 7 bullets, un dato por línea, formato "**Campo**: valor". Cero prosa: el desarrollo va abajo.
+Entra solo lo de este calibre: antigüedad, matrícula, presencia digital, calificación pública y número de reseñas, posición en buscadores, score de fit, y el hallazgo más accionable.
+Solo bullets con dato real detrás. NUNCA un bullet que diga "no se encontró". Con poca información sale corto, y está bien así.
 
-## El representante
-Rol, y lo que se sabe de su trayectoria o actividad pública si algo se encontró. Si no hay nada, dilo en una frase — no hace falta especular.
+## 2 · El colegio
+Máximo 4 bullets: qué es, tamaño, niveles, y lo que ya tiene resuelto. Lo que hace bien va antes de cualquier señal de alerta.
+Del representante, una línea SOLO si se encontró algo verificable. Si no, se omite — no se especula.
 
-## Reputación digital
-Lo que un padre de familia o un alumno ve al googlear la institución. Si en los resultados aparecen calificaciones (estrellas de Google/Facebook) o reseñas, repórtalas así: primero la calificación global con fuente; luego hasta 3 señales positivas y hasta 3 señales críticas, cada una en un bullet con su fuente.
-Las críticas parafraséalas en tono profesional y factual — nunca copies insultos ni acusaciones literales, describe el patrón (ej. "quejas por falta de claridad en costos adicionales"). Redacta cada señal crítica como se redactaría frente al director en la reunión: nunca como juicio, siempre como patrón que un sistema puede corregir — el mismo principio de "no es que no les importe, es que no tienen todavía un sistema para responder a tiempo" aplica aquí.
-Si no se encontró nada, escribe "No se encontraron reseñas públicas relevantes". Este es de los insumos más accionables del brief: un patrón de quejas es un dolor que el comercial puede nombrar con tacto en la reunión — dáselo ya en las palabras correctas.
+## 3 · Presencia digital
+Lo que una familia encuentra al buscarlos. Bullets, sin prosa alrededor.
+- Una línea por red social oficial: "**Plataforma**: URL — seguidores: N (Fuente: URL)". Seguidores solo si aparecen explícitos en las fuentes. Si no hay ninguna red, una línea diciéndolo.
+- Las mediciones de posicionamiento que te di, TAL CUAL. Di "en buscadores", NUNCA "en Google": la medición no viene de Google.
+- **Google Maps**: el enlace que te di, sin reescribirlo. Si es la ficha, dilo; si es la búsqueda, dilo.
+Cierra con UNA frase de lectura comercial, el dato primero. Si no aparecen cuando una familia busca colegios en su ciudad, nómbralo sin dramatizar y sin culpar a nadie del colegio: le pasa a la mayoría por no haberlo sistematizado nunca.
 
-## Cruce con el ICP de SuperLeads
-Triggers detectados, dolor inferido, banderas amarillas si las hay. Usa el vocabulario de la casa donde aplique — "cuellos de botella", no "áreas de oportunidad"; "fuga", no "pérdida" ni "oportunidades perdidas". El dolor se nombra como ausencia de sistema, nunca como carencia del director o de su equipo.
+## 4 · Reputación
+Calificación global con fuente, si la hay. Después máximo 2 señales positivas y máximo 2 críticas, un bullet cada una con su fuente.
+Las críticas se parafrasean como patrón, nunca literales ni como juicio: "quejas por falta de claridad en costos", no el insulto. Cada una ya redactada como se diría frente al director.
+Sin reseñas públicas: una línea y se acabó.
 
-## Anclajes de personalización
-3-5 puntos, formato: **hecho específico** — por qué sirve para la conversación. (Fuente: URL)
-El hecho es siempre del colegio, nunca de SuperLeads — el número del cliente vale diez veces más que el nuestro. Un anclaje por línea, sin párrafo de relleno alrededor.
+## 5 · Anclajes para la conversación
+Exactamente 3. Formato: **hecho del colegio** — para qué sirve en la reunión. (Fuente: URL)
+El hecho es siempre del colegio, nunca de SuperLeads: su número vale diez veces más que el nuestro. Sin párrafo alrededor.
 
-## Score de fit ICP
-Número 1-10 con una justificación de 1-2 frases. Sin adjetivos vacíos — la justificación se apoya en los hechos ya citados arriba, no en una opinión nueva.
+## 6 · Veredicto
+Tres líneas, ni una más:
+- **Cuellos de botella**: los detectados, en una línea. El dolor es ausencia de sistema, nunca carencia del director ni de su equipo.
+- **Score de fit**: N/10 — media frase de justificación, apoyada en hechos ya citados arriba.
+- **Recomendación**: avanzar / explorar con cautela / no forzar. Sin coberturas tipo "podría considerarse".
 
-## Recomendación
-Avanzar / explorar con cautela / no forzar — en 1 frase. Directa, sin cobertores tipo "podría considerarse".
-
-## Fuentes consultadas
-(lista de URLs usadas)`;
+## 7 · Fuentes
+Las URLs usadas, una por línea. Sin comentarios.`;
 
 export async function generarQueries(deepseekKey: string, p: ProspectoExtraido): Promise<{ ciudad: string; queries: string[] }> {
   const user = `Datos del prospecto:
@@ -180,6 +183,34 @@ export function posicionDeSitio(resultados: FuenteResultado[], webUrl: string): 
   return null;
 }
 
+// ── Google Maps ──
+// La ficha de Maps es donde vive la reputación de un colegio: calificación,
+// número de reseñas y ubicación. Un comercial la quiere abrir de un clic.
+//
+// Dos caminos, y el orden importa. El enlace de BÚSQUEDA se construye a mano y
+// por lo tanto SIEMPRE existe: no depende de que el buscador haya indexado la
+// ficha. Si además aparece una ficha real en los resultados, esa gana, porque
+// lleva directo al lugar en vez de a una lista.
+const HOSTS_MAPS = ['google.com/maps', 'maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps'];
+
+/** URL de búsqueda en Google Maps. Determinista: no consulta nada. */
+export function busquedaEnMaps(institucion: string, ciudad: string): string | null {
+  const termino = [institucion, ciudad].filter(Boolean).join(' ').trim();
+  if (!termino) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(termino)}`;
+}
+
+/** Ficha concreta de Maps si el buscador la devolvió. Null si no apareció. */
+export function fichaEnMaps(resultados: FuenteResultado[]): { url: string; titulo: string; snippet: string } | null {
+  for (const r of resultados) {
+    const u = normalizarUrl(r.url);
+    if (HOSTS_MAPS.some(h => u.startsWith(h) || u.includes('/' + h))) {
+      return { url: r.url, titulo: r.titulo, snippet: r.snippet };
+    }
+  }
+  return null;
+}
+
 // ── Fotos relevantes (Brave Image Search) ──
 // Registro visual de cómo se ve el prospecto en internet. Si el plan de Brave
 // no incluye imágenes o la búsqueda falla, regresa vacío sin romper nada.
@@ -221,6 +252,8 @@ function queriesFijas(p: ProspectoExtraido): string[] {
   return [
     `${base} seguidores Facebook Instagram TikTok LinkedIn`,
     `${base} reseñas opiniones Google`,
+    // La ficha de Maps trae calificación, reseñas y dirección de un solo golpe.
+    `${base} Google Maps calificación reseñas dirección`,
   ];
 }
 
@@ -287,6 +320,22 @@ export async function ejecutarResearch(deepseekKey: string, braveKey: string, p:
     lineasPos.push('- No se pudo medir la búsqueda por zona (no se infirió la ciudad con confianza).');
   }
 
+  // Google Maps. La ficha se busca entre TODOS los resultados, no solo en la
+  // query dedicada: cualquier búsqueda puede devolverla. Y el enlace de
+  // búsqueda va siempre, porque se construye y no se consulta.
+  const ficha = fichaEnMaps(resultadosPorQuery.flatMap(r => r.resultados));
+  const busquedaMaps = busquedaEnMaps(p.institucion, ciudad);
+
+  const lineasMaps: string[] = [];
+  if (ficha) {
+    lineasMaps.push(`- Ficha encontrada: ${ficha.url}`);
+    lineasMaps.push(`- Lo que dice el resultado: ${ficha.titulo} — ${ficha.snippet}`);
+  } else if (busquedaMaps) {
+    lineasMaps.push(`- No se encontró la ficha directa. Búsqueda en Maps: ${busquedaMaps}`);
+  } else {
+    lineasMaps.push('- No se pudo armar la búsqueda en Maps (falta el nombre de la institución).');
+  }
+
   // La búsqueda de zona también sirve de contexto: ahí se ven los colegios
   // competidores que SÍ aparecen cuando una familia busca en esa ciudad.
   if (queryZona && resZona.length) {
@@ -312,8 +361,11 @@ Ciudad inferida: ${ciudad || '(no inferida)'}
 Redes sociales detectadas en el sitio oficial:
 ${redesTexto}
 
-Datos medidos de posicionamiento (repórtalos tal cual en la sección "Posicionamiento en buscadores"):
+Datos medidos de posicionamiento (repórtalos tal cual, sin cambiarlos):
 ${lineasPos.join('\n')}
+
+Google Maps (el enlace va tal cual, sin acortarlo ni reescribirlo):
+${lineasMaps.join('\n')}
 
 Resultados de búsqueda web:
 
@@ -327,8 +379,11 @@ ${fuentesTexto}`;
     const seccionFotos = '## Fotos relevantes\n' + fotos
       .map(f => `![${f.titulo}](${f.url})\n(Encontrada en: ${f.fuente})`)
       .join('\n');
-    const marcaFuentes = '## Fuentes consultadas';
-    dossier = dossier.includes(marcaFuentes)
+    // Se busca la bibliografía por patrón, no por cadena exacta: si el modelo
+    // escribe el título con una variante mínima, las fotos igual quedan antes
+    // de las fuentes en vez de irse al final.
+    const marcaFuentes = dossier.match(/^##\s*(?:\d+\s*·\s*)?fuentes.*$/im)?.[0];
+    dossier = marcaFuentes
       ? dossier.replace(marcaFuentes, seccionFotos + '\n\n' + marcaFuentes)
       : dossier + '\n\n' + seccionFotos;
   }
