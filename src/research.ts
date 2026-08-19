@@ -389,6 +389,30 @@ ${fuentesTexto}`;
 
   let dossier = await llamarDeepSeek(deepseekKey, { system: SYSTEM_DOSSIER, user, temperature: 0.3, model: 'deepseek-v4-pro' });
 
+  // El enlace de Maps se garantiza aquí, no se le pide al modelo.
+  //
+  // Medido el 19-ago: de seis briefs regenerados, TRES no traían el enlace
+  // aunque el prompt lo daba explícito y le pedía copiarlo tal cual. Confiar en
+  // que un modelo transcriba una URL es el mismo error que este archivo ya
+  // resolvió para las fotos. Si el dossier no trae ningún enlace de Maps, se
+  // inserta al cierre de "Presencia digital"; si el modelo sí lo puso, no se
+  // duplica.
+  const enlaceMaps = ficha?.url ?? busquedaMaps;
+  if (enlaceMaps && !/https?:\/\/\S*(?:google\.[a-z.]+\/maps|maps\.google|maps\.app\.goo\.gl)/i.test(dossier)) {
+    const etiqueta = ficha ? 'ficha' : 'búsqueda';
+    const linea = `- **Google Maps** (${etiqueta}): ${enlaceMaps}`;
+    const presencia = dossier.match(/^##\s*(?:\d+\s*·\s*)?presencia digital.*$/im);
+    if (presencia) {
+      // Al final de la sección: justo antes del siguiente encabezado.
+      const desde = dossier.indexOf(presencia[0]) + presencia[0].length;
+      const rel = dossier.slice(desde).search(/\n##\s/);
+      const corte = rel === -1 ? dossier.length : desde + rel;
+      dossier = dossier.slice(0, corte).trimEnd() + `\n${linea}\n` + dossier.slice(corte);
+    } else {
+      dossier = `${dossier.trimEnd()}\n\n${linea}\n`;
+    }
+  }
+
   // La sección de fotos se arma aquí (no en el LLM) para que las URLs sean
   // reales y no alucinadas — es el registro visual de cómo los encontramos.
   if (fotos.length) {
