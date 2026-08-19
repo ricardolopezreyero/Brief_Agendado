@@ -35,10 +35,10 @@ export const ESTILOS_FOOTER = `
   .footer-inner{max-width:900px;margin:0 auto;position:relative;}
   .footer-why{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding-bottom:22px;border-bottom:.5px solid rgba(255,255,255,.12);margin-bottom:18px;}
   .footer-why-item .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:20px;background:rgba(86,239,159,.1);color:var(--green);border:.5px solid rgba(86,239,159,.25);margin-bottom:8px;}
-  .footer-why-item p.txt{margin:0;font-size:12.5px;line-height:1.65;color:#b7c0d8;}
+  .footer-why-item p.txt{margin:0;font-size:12.5px;line-height:1.65;color:#7a9fd4;}
   .footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
   .footer-bottom img{width:110px;display:block;opacity:.9;}
-  .footer-bottom p{margin:0;font-size:11px;color:#5c6b8f;}
+  .footer-bottom p{margin:0;font-size:11px;color:#4a6aaa;}
   @media(max-width:600px){
     .footer-why{grid-template-columns:1fr;gap:18px;}
     .footer-bottom{flex-direction:column;align-items:flex-start;gap:10px;}

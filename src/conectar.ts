@@ -23,7 +23,7 @@ ${headAbiertoHtml('Conectar calendario — Brief Agendado')}
 
   .clave{background:var(--navy-deep);border-radius:12px;padding:18px 20px;margin-bottom:24px;display:flex;gap:12px;align-items:flex-start;}
   .clave .icono{flex:none;font-size:18px;}
-  .clave p{margin:0;font-size:13px;line-height:1.6;color:#b7c0d8;}
+  .clave p{margin:0;font-size:13px;line-height:1.6;color:#7a9fd4;}
   .clave p b{color:var(--green);}
   .clave code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:5px;color:#fff;}
 

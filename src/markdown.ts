@@ -16,7 +16,7 @@ export function escapeHtml(s: string): string {
 function inlineMd(s: string): string {
   let out = escapeHtml(s);
   out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  out = out.replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" style="color:#0039C8;">$1</a>');
+  out = out.replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" style="color:#0039C8;overflow-wrap:anywhere;">$1</a>');
   return out;
 }
 
@@ -56,6 +56,26 @@ export function conWhySuperLeads(dossierMd: string): string {
   return `${antes}\n\n${SECCION_WHY_SUPERLEADS}\n\n${desde}`;
 }
 
+// Estilos del dossier, según la guía de estilos de SuperLeads.
+//
+// Van EN LÍNEA y con la familia repetida en cada elemento a propósito: este HTML
+// se manda por correo, y Outlook no hereda `font-family` del <body>. Sin esto el
+// brief le llega al cliente en serif.
+//
+// De la guía: §4.1 la escala tipográfica · §3.3 los colores de texto ·
+// §4.2 tabular-nums obligatorio en cifras · §5 radios · §8 bordes de .5px.
+const FUENTE = "'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif";
+
+// 17px ≈ 12.75pt, dentro del rango de "título de sección" de documento
+// (§20.5: 12.5–14pt). Antes iba a 15px, el MISMO tamaño que el cuerpo, así que
+// las secciones no se distinguían del texto: la jerarquía desaparecía.
+const H2 = `margin:26px 0 10px;font-family:${FUENTE};font-size:17px;font-weight:700;letter-spacing:-.4px;line-height:1.2;color:#002582;border-bottom:.5px solid #e0e8f8;padding-bottom:6px;`;
+
+// El cuerpo declara color, tamaño e interlineado en vez de heredarlos, por lo
+// del correo. `tabular-nums` porque el brief es casi todo cifras y sin él los
+// dígitos bailan de una línea a otra (§4.2).
+const CUERPO = `font-family:${FUENTE};font-size:14px;line-height:1.78;color:#1a1a1a;font-variant-numeric:tabular-nums;`;
+
 // Convierte el markdown del dossier (secciones ## + listas "- ") a HTML.
 // Siempre pasa primero por conWhySuperLeads() para que la mini sección de
 // marca aparezca en TODO lugar donde se renderiza un dossier (viewer,
@@ -77,9 +97,11 @@ export function dossierToHtml(md: string): string {
 
   const flushParagraph = () => {
     if (paragraph.length) {
+      // Filete de 3px: el de la casa para callouts. Los bordes estructurales van
+      // a .5px (§8), pero un filete de acento es otra cosa.
       const estilo = enRayosX
-        ? 'margin:0 0 20px;padding:16px 20px;border-left:4px solid #002582;background:#EEF2FF;border-radius:0 12px 12px 0;'
-        : 'margin:0 0 14px;';
+        ? `${CUERPO}margin:0 0 20px;padding:16px 20px;border-left:3px solid #002582;background:#EEF2FF;border-radius:0 12px 12px 0;`
+        : `${CUERPO}margin:0 0 14px;`;
       blocks.push(`<p style="${estilo}">${inlineMd(paragraph.join(' '))}</p>`);
       paragraph = [];
     }
@@ -87,9 +109,9 @@ export function dossierToHtml(md: string): string {
   const flushList = () => {
     if (list.length) {
       const estilo = enRayosX
-        ? 'margin:0 0 20px;padding:16px 24px 16px 38px;border-left:4px solid #002582;background:#EEF2FF;border-radius:0 12px 12px 0;'
-        : 'margin:0 0 14px;padding-left:20px;';
-      blocks.push(`<ul style="${estilo}">${list.map(li => `<li style="margin-bottom:8px;">${inlineMd(li)}</li>`).join('')}</ul>`);
+        ? `${CUERPO}margin:0 0 20px;padding:16px 24px 16px 38px;border-left:3px solid #002582;background:#EEF2FF;border-radius:0 12px 12px 0;`
+        : `${CUERPO}margin:0 0 14px;padding-left:20px;`;
+      blocks.push(`<ul style="${estilo}">${list.map(li => `<li style="${CUERPO}margin-bottom:8px;">${inlineMd(li)}</li>`).join('')}</ul>`);
       list = [];
     }
   };
@@ -102,11 +124,11 @@ export function dossierToHtml(md: string): string {
       flushParagraph(); flushList();
       const titulo = line.slice(3).trim();
       enRayosX = /antes de entrar/i.test(titulo);
-      blocks.push(`<h2 data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#002582;border-bottom:.5px solid #e0e8f8;padding-bottom:6px;">${escapeHtml(titulo)}</h2>`);
+      blocks.push(`<h2 data-h="1" style="${H2}">${escapeHtml(titulo)}</h2>`);
     } else if (img) {
       // Imagen de markdown en su propia línea (sección "Fotos relevantes")
       flushParagraph(); flushList();
-      blocks.push(`<figure style="margin:0 0 14px;display:inline-block;vertical-align:top;width:48%;margin-right:2%;"><img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}" style="width:100%;border-radius:8px;display:block;"><figcaption style="font-size:11px;color:#98a1b0;margin-top:4px;line-height:1.4;">${escapeHtml(img[1])}</figcaption></figure>`);
+      blocks.push(`<figure style="margin:0 0 14px;display:inline-block;vertical-align:top;width:48%;margin-right:2%;"><img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}" style="width:100%;border-radius:12px;display:block;"><figcaption style="font-family:${FUENTE};font-size:11px;color:#98a1b0;margin-top:4px;line-height:1.4;">${escapeHtml(img[1])}</figcaption></figure>`);
     } else if (line.startsWith('(Encontrada en:')) {
       // Pie de foto con la página de origen — va pegado a la figura anterior
       const urlFuente = line.match(/https?:\/\/[^\s)]+/)?.[0];
