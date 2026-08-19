@@ -200,7 +200,60 @@ export function posicionDeSitio(resultados: FuenteResultado[], webUrl: string): 
 // por lo tanto SIEMPRE existe: no depende de que el buscador haya indexado la
 // ficha. Si además aparece una ficha real en los resultados, esa gana, porque
 // lleva directo al lugar en vez de a una lista.
-const HOSTS_MAPS = ['google.com/maps', 'maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps'];
+/**
+ * ¿Esta URL es de Google Maps? Se decide por el HOST, nunca por la cadena.
+ *
+ * La primera versión hacía `u.includes('/google.com/maps')` y aceptó
+ * `trustpilot.com/review/google.com/maps` — una reseña de Trustpilot SOBRE el
+ * producto Maps— como si fuera la ficha del colegio. Llegó al prompt y solo se
+ * salvó porque el modelo se dio cuenta y se negó a publicarla. Un enlace ajeno
+ * en el brief de un cliente es exactamente lo que no puede pasar.
+ */
+export function esUrlDeMaps(url: string): boolean {
+  let host: string;
+  let ruta: string;
+  try {
+    const u = new URL(url);
+    host = u.hostname.toLowerCase().replace(/^www\./, '');
+    ruta = u.pathname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (host === 'maps.app.goo.gl') return true;
+  if (host === 'maps.google.com' || host.endsWith('.maps.google.com')) return true;
+  if (host === 'goo.gl') return ruta.startsWith('/maps');
+  // google.com, google.com.mx, google.es…
+  if (/^google\.[a-z.]+$/.test(host)) return ruta.startsWith('/maps');
+  return false;
+}
+
+/**
+ * Inserta el enlace de Maps al cierre de "Presencia digital".
+ *
+ * Función aparte y exportada porque este enlace ya se perdió dos veces: primero
+ * porque se le pedía al modelo que lo copiara y no lo hacía (3 de 6 briefs), y
+ * después porque la inyección vivía embutida en `ejecutarResearch` y no había
+ * forma de probarla. Ahora se prueba.
+ *
+ * Si el dossier ya trae un enlace de Maps, no se duplica.
+ */
+export function conEnlaceMaps(dossier: string, enlace: string | null, etiqueta: 'ficha' | 'búsqueda'): string {
+  if (!enlace) return dossier;
+
+  const yaTiene = dossier
+    .split(/\s+/)
+    .some((trozo) => esUrlDeMaps(trozo.replace(/[),.;\]]+$/, '')));
+  if (yaTiene) return dossier;
+
+  const linea = `- **Google Maps** (${etiqueta}): ${enlace}`;
+  const encabezado = dossier.match(/^##\s*(?:\d+\s*·\s*)?presencia digital.*$/im);
+  if (!encabezado) return `${dossier.trimEnd()}\n\n${linea}\n`;
+
+  const desde = dossier.indexOf(encabezado[0]) + encabezado[0].length;
+  const rel = dossier.slice(desde).search(/\n##\s/);
+  const corte = rel === -1 ? dossier.length : desde + rel;
+  return `${dossier.slice(0, corte).trimEnd()}\n${linea}\n${dossier.slice(corte)}`;
+}
 
 /** URL de búsqueda en Google Maps. Determinista: no consulta nada. */
 export function busquedaEnMaps(institucion: string, ciudad: string): string | null {
@@ -212,10 +265,7 @@ export function busquedaEnMaps(institucion: string, ciudad: string): string | nu
 /** Ficha concreta de Maps si el buscador la devolvió. Null si no apareció. */
 export function fichaEnMaps(resultados: FuenteResultado[]): { url: string; titulo: string; snippet: string } | null {
   for (const r of resultados) {
-    const u = normalizarUrl(r.url);
-    if (HOSTS_MAPS.some(h => u.startsWith(h) || u.includes('/' + h))) {
-      return { url: r.url, titulo: r.titulo, snippet: r.snippet };
-    }
+    if (esUrlDeMaps(r.url)) return { url: r.url, titulo: r.titulo, snippet: r.snippet };
   }
   return null;
 }
@@ -389,29 +439,10 @@ ${fuentesTexto}`;
 
   let dossier = await llamarDeepSeek(deepseekKey, { system: SYSTEM_DOSSIER, user, temperature: 0.3, model: 'deepseek-v4-pro' });
 
-  // El enlace de Maps se garantiza aquí, no se le pide al modelo.
-  //
-  // Medido el 19-ago: de seis briefs regenerados, TRES no traían el enlace
-  // aunque el prompt lo daba explícito y le pedía copiarlo tal cual. Confiar en
-  // que un modelo transcriba una URL es el mismo error que este archivo ya
-  // resolvió para las fotos. Si el dossier no trae ningún enlace de Maps, se
-  // inserta al cierre de "Presencia digital"; si el modelo sí lo puso, no se
-  // duplica.
-  const enlaceMaps = ficha?.url ?? busquedaMaps;
-  if (enlaceMaps && !/https?:\/\/\S*(?:google\.[a-z.]+\/maps|maps\.google|maps\.app\.goo\.gl)/i.test(dossier)) {
-    const etiqueta = ficha ? 'ficha' : 'búsqueda';
-    const linea = `- **Google Maps** (${etiqueta}): ${enlaceMaps}`;
-    const presencia = dossier.match(/^##\s*(?:\d+\s*·\s*)?presencia digital.*$/im);
-    if (presencia) {
-      // Al final de la sección: justo antes del siguiente encabezado.
-      const desde = dossier.indexOf(presencia[0]) + presencia[0].length;
-      const rel = dossier.slice(desde).search(/\n##\s/);
-      const corte = rel === -1 ? dossier.length : desde + rel;
-      dossier = dossier.slice(0, corte).trimEnd() + `\n${linea}\n` + dossier.slice(corte);
-    } else {
-      dossier = `${dossier.trimEnd()}\n\n${linea}\n`;
-    }
-  }
+  // El enlace de Maps se garantiza en código, no se le pide al modelo: de seis
+  // briefs regenerados, TRES no lo traían aunque el prompt lo daba explícito.
+  // Mismo criterio que las fotos, y por el mismo motivo.
+  dossier = conEnlaceMaps(dossier, ficha?.url ?? busquedaMaps, ficha ? 'ficha' : 'búsqueda');
 
   // La sección de fotos se arma aquí (no en el LLM) para que las URLs sean
   // reales y no alucinadas — es el registro visual de cómo los encontramos.
