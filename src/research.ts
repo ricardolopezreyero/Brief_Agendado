@@ -203,28 +203,45 @@ export function posicionDeSitio(resultados: FuenteResultado[], webUrl: string): 
 /**
  * ¿Esta URL es de Google Maps? Se decide por el HOST, nunca por la cadena.
  *
- * La primera versión hacía `u.includes('/google.com/maps')` y aceptó
- * `trustpilot.com/review/google.com/maps` — una reseña de Trustpilot SOBRE el
- * producto Maps— como si fuera la ficha del colegio. Llegó al prompt y solo se
- * salvó porque el modelo se dio cuenta y se negó a publicarla. Un enlace ajeno
- * en el brief de un cliente es exactamente lo que no puede pasar.
+ * Dos casos reales que hubo que descartar, los dos vistos en producción:
+ *
+ * 1. `trustpilot.com/review/google.com/maps` — una reseña de Trustpilot SOBRE el
+ *    producto Maps. La primera versión comparaba cadenas
+ *    (`u.includes('/google.com/maps')`) y la aceptó como ficha del colegio.
+ *    Llegó al prompt y solo se salvó porque el modelo se negó a publicarla.
+ * 2. `google.com.mx/maps` a secas — la PORTADA de Maps. Es una URL de Maps de
+ *    verdad, y no sirve de nada: no apunta a ningún lugar. Peor aún, aceptarla
+ *    como "ficha" impedía caer al enlace de búsqueda, que sí es útil.
+ *
+ * De ahí las dos condiciones: el host manda, y la ruta tiene que apuntar a algo.
  */
 export function esUrlDeMaps(url: string): boolean {
   let host: string;
   let ruta: string;
+  let busqueda: string;
   try {
     const u = new URL(url);
     host = u.hostname.toLowerCase().replace(/^www\./, '');
     ruta = u.pathname.toLowerCase();
+    busqueda = u.search;
   } catch {
     return false;
   }
+  // Los acortadores siempre apuntan a un lugar concreto.
   if (host === 'maps.app.goo.gl') return true;
-  if (host === 'maps.google.com' || host.endsWith('.maps.google.com')) return true;
-  if (host === 'goo.gl') return ruta.startsWith('/maps');
-  // google.com, google.com.mx, google.es…
-  if (/^google\.[a-z.]+$/.test(host)) return ruta.startsWith('/maps');
-  return false;
+  if (host === 'goo.gl') return ruta.startsWith('/maps/') && ruta.length > 6;
+
+  const esHostDeMaps =
+    host === 'maps.google.com' ||
+    host.endsWith('.maps.google.com') ||
+    // google.com, google.com.mx, google.es…
+    (/^google\.[a-z.]+$/.test(host) && ruta.startsWith('/maps'));
+  if (!esHostDeMaps) return false;
+
+  // La ruta tiene que apuntar a algo: /maps/place/…, /maps/search/…, /maps/@…
+  // `/maps` a secas es la portada. Con query (?cid=, ?q=) también vale.
+  const conDestino = /^\/maps\/.+/.test(ruta) || busqueda.length > 1;
+  return conDestino;
 }
 
 /**
