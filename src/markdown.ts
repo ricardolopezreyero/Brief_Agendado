@@ -42,7 +42,10 @@ export function conWhySuperLeads(dossierMd: string): string {
   if (dossierMd.includes('## Por qué SuperLeads')) return dossierMd;
 
   const lineas = dossierMd.split('\n');
-  const idxFuentes = lineas.findIndex(l => /^##\s*fuentes/i.test(l.trim()));
+  // Tolerante al número de sección ("## 7 · Fuentes" y también "## Fuentes"):
+  // los títulos van numerados por la guía de estilos, y una coincidencia exacta
+  // se rompía sola en cuanto alguien renumeraba.
+  const idxFuentes = lineas.findIndex(l => /^##\s*(?:\d+\s*·\s*)?fuentes/i.test(l.trim()));
 
   if (idxFuentes === -1) {
     return `${dossierMd.trimEnd()}\n\n${SECCION_WHY_SUPERLEADS}\n`;
@@ -62,10 +65,14 @@ export function dossierToHtml(md: string): string {
   const blocks: string[] = [];
   let list: string[] = [];
   let paragraph: string[] = [];
-  // La sección "Resumen Brief Pre Rayos X Inscripciones" es el condensado
-  // que un comercial lee en vez de todo el brief — se resalta como callout
-  // (guia-estilos §Componentes) para que salte a la vista en pantalla, PDF
-  // y correo por igual.
+  // La primera sección ("1 · Antes de entrar") es el condensado que un comercial
+  // lee en vez de todo el brief — se resalta como callout (guia-estilos) para
+  // que salte a la vista en pantalla, PDF y correo por igual.
+  //
+  // Se detecta por palabras clave, NO por título exacto. Antes era
+  // /^resumen brief pre rayos x inscripciones$/i y el recuadro no se activó
+  // jamás: el modelo escribía "Resumen ejecutivo" y la comparación exacta
+  // fallaba en silencio. Comprobado en los cinco dossiers de producción.
   let enRayosX = false;
 
   const flushParagraph = () => {
@@ -94,7 +101,7 @@ export function dossierToHtml(md: string): string {
     if (line.startsWith('## ')) {
       flushParagraph(); flushList();
       const titulo = line.slice(3).trim();
-      enRayosX = /^resumen brief pre rayos x inscripciones$/i.test(titulo);
+      enRayosX = /antes de entrar/i.test(titulo);
       blocks.push(`<h2 data-h="1" style="margin:24px 0 8px;font-size:15px;font-weight:700;color:#002582;border-bottom:.5px solid #e0e8f8;padding-bottom:6px;">${escapeHtml(titulo)}</h2>`);
     } else if (img) {
       // Imagen de markdown en su propia línea (sección "Fotos relevantes")
