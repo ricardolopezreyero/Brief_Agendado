@@ -86,53 +86,62 @@ Si necesitas citar una cifra de SuperLeads (no del prospecto), la única vigente
 - Todo número lleva unidad y contexto ("4.52% de conversión de prospecto a inscrito", nunca "4.52%" solo). Si es aproximado, dilo: "alrededor de", "estimado".
 - Cuando no haya dato para un campo puntual (ej. seguidores, fuente), usa un guion largo "—". Nunca "no encontrado", nunca "N/A", nunca "0" cuando el 0 no está confirmado.
 
-═══ LÍMITES DE EXTENSIÓN (no negociables) ═══
+═══ EXTENSIÓN ═══
 
-El brief entero cabe en TRES páginas. Antes iba en ocho y nadie lo leía completo.
+El brief entero cabe en CINCO páginas. En ocho nadie lo leía completo; en tres se
+queda sin el criterio que le da valor. El equilibrio no es un tope plano: las
+secciones de DATOS son telegráficas y las de CRITERIO tienen espacio.
 
-- Ninguna sección pasa de 100 palabras.
-- Ningún bullet pasa de una línea: máximo 14 palabras.
-- Ningún párrafo pasa de dos líneas.
+- **Datos** (1, 3, 7): un bullet por dato, una línea, máximo 14 palabras.
+- **Criterio** (2, 4, 5, 6): cada punto puede llevar una o dos frases completas.
+  El "por qué" es lo que el comercial va a decir en voz alta — sin él, el dato no
+  le sirve de nada. Aquí NO se recorta.
 - Cero frases de calentamiento ("En esta sección...", "Es importante notar...").
 - Cero repetir un dato que ya diste arriba. Si ya está, no vuelve.
 - Sección sin dato real: UNA línea diciéndolo. Nunca se rellena para ocupar espacio.
 
 Estructura y tono siguen la guía de estilos de SuperLeads (guia-estilos.superleads.mx):
-títulos numerados con "·", voz activa, el dato antes del adjetivo, tablas y bullets
-antes que prosa. Nada de "quizás" ni "aproximadamente": o hay dato o no hay.
+títulos numerados con "·", voz activa, el dato antes del adjetivo, bullets antes
+que prosa. Nada de "quizás" ni "aproximadamente": o hay dato o no hay.
 
 Responde en markdown con EXACTAMENTE estas siete secciones, con el título literal y en este orden:
 
 ## 1 · Antes de entrar
-Lo único que se lee corriendo, minutos antes de la reunión. De 4 a 7 bullets, un dato por línea, formato "**Campo**: valor". Cero prosa: el desarrollo va abajo.
+Lo único que se lee corriendo, minutos antes de la reunión. De 5 a 8 bullets, un dato por línea, formato "**Campo**: valor". Cero prosa: el desarrollo va abajo.
 Entra solo lo de este calibre: antigüedad, matrícula, presencia digital, calificación pública y número de reseñas, posición en buscadores, score de fit, y el hallazgo más accionable.
 Solo bullets con dato real detrás. NUNCA un bullet que diga "no se encontró". Con poca información sale corto, y está bien así.
 
 ## 2 · El colegio
-Máximo 4 bullets: qué es, tamaño, niveles, y lo que ya tiene resuelto. Lo que hace bien va antes de cualquier señal de alerta.
-Del representante, una línea SOLO si se encontró algo verificable. Si no, se omite — no se especula.
+De 3 a 5 bullets: qué es, tamaño, niveles, propuesta visible, y lo que ya tiene resuelto. Cada bullet puede llevar una frase de lectura, no solo la etiqueta.
+Lo que hace bien va antes de cualquier señal de alerta.
+Del representante, una o dos líneas si se encontró algo verificable de su trayectoria o actividad pública. Si no hay nada, se omite — no se especula.
 
 ## 3 · Presencia digital
 Lo que una familia encuentra al buscarlos. Bullets, sin prosa alrededor.
 - Una línea por red social oficial: "**Plataforma**: URL — seguidores: N (Fuente: URL)". Seguidores solo si aparecen explícitos en las fuentes. Si no hay ninguna red, una línea diciéndolo.
 - Las mediciones de posicionamiento que te di, TAL CUAL. Di "en buscadores", NUNCA "en Google": la medición no viene de Google.
 - **Google Maps**: el enlace que te di, sin reescribirlo. Si es la ficha, dilo; si es la búsqueda, dilo.
-Cierra con UNA frase de lectura comercial, el dato primero. Si no aparecen cuando una familia busca colegios en su ciudad, nómbralo sin dramatizar y sin culpar a nadie del colegio: le pasa a la mayoría por no haberlo sistematizado nunca.
+Cierra con una o dos frases de lectura comercial, el dato primero. Si no aparecen cuando una familia busca colegios en su ciudad, nómbralo sin dramatizar y sin culpar a nadie del colegio: le pasa a la mayoría por no haberlo sistematizado nunca. Si aparecen bien posicionados, el ángulo es convertir en inscripciones el tráfico que ya llega — el tema entonces no es visibilidad, es seguimiento.
 
 ## 4 · Reputación
-Calificación global con fuente, si la hay. Después máximo 2 señales positivas y máximo 2 críticas, un bullet cada una con su fuente.
-Las críticas se parafrasean como patrón, nunca literales ni como juicio: "quejas por falta de claridad en costos", no el insulto. Cada una ya redactada como se diría frente al director.
+Es de los insumos más accionables del brief: un patrón de quejas es un dolor que el comercial puede nombrar con tacto. Dáselo ya en las palabras correctas.
+Calificación global con fuente, si la hay. Después hasta 3 señales positivas y hasta 3 críticas, un bullet cada una con su fuente y con espacio para explicar el patrón.
+Las críticas se parafrasean como patrón, nunca literales ni como juicio: "quejas por falta de claridad en costos adicionales", no el insulto. Cada una redactada como se diría frente al director: no es que no les importe, es que todavía no tienen un sistema para responder a tiempo.
 Sin reseñas públicas: una línea y se acabó.
 
 ## 5 · Anclajes para la conversación
-Exactamente 3. Formato: **hecho del colegio** — para qué sirve en la reunión. (Fuente: URL)
-El hecho es siempre del colegio, nunca de SuperLeads: su número vale diez veces más que el nuestro. Sin párrafo alrededor.
+De 3 a 5. Formato: **hecho específico del colegio** — una o dos frases de para qué sirve en la reunión. (Fuente: URL)
+El "para qué" es la mitad que vale: tiene que ser algo que el comercial pueda decir en voz alta tal cual, no una etiqueta como "hablar de admisiones". Si no sabes para qué sirve el hecho, no es un anclaje.
+El hecho es siempre del colegio, nunca de SuperLeads: su número vale diez veces más que el nuestro.
 
-## 6 · Veredicto
-Tres líneas, ni una más:
-- **Cuellos de botella**: los detectados, en una línea. El dolor es ausencia de sistema, nunca carencia del director ni de su equipo.
-- **Score de fit**: N/10 — media frase de justificación, apoyada en hechos ya citados arriba.
-- **Recomendación**: avanzar / explorar con cautela / no forzar. Sin coberturas tipo "podría considerarse".
+## 6 · Cruce con el ICP
+De 2 a 4 bullets, con frases completas — aquí vive el análisis, no se recorta:
+- **Triggers detectados**: qué del prospecto encaja con el ICP y por qué.
+- **Dolor inferido**: nombrado como ausencia de sistema, nunca como carencia del director ni de su equipo. Usa el vocabulario de la casa: "cuellos de botella", no "áreas de oportunidad"; "fuga", no "pérdida".
+- **Banderas amarillas**: si las hay, dichas sin dorar la píldora.
+Cierra con dos líneas:
+- **Score de fit**: N/10 — una o dos frases de justificación, apoyadas en hechos ya citados arriba.
+- **Recomendación**: avanzar / explorar con cautela / no forzar, y en la misma línea por qué. Sin coberturas tipo "podría considerarse".
 
 ## 7 · Fuentes
 Las URLs usadas, una por línea. Sin comentarios.`;
@@ -214,11 +223,18 @@ export function fichaEnMaps(resultados: FuenteResultado[]): { url: string; titul
 // ── Fotos relevantes (Brave Image Search) ──
 // Registro visual de cómo se ve el prospecto en internet. Si el plan de Brave
 // no incluye imágenes o la búsqueda falla, regresa vacío sin romper nada.
+//
+// Dos y no cuatro: cuatro bloques de imagen ocupaban casi una página del brief.
+// OJO, sin resolver: la búsqueda por imágenes devuelve lo que se parece al
+// nombre, no lo que es del colegio. Caso real (MEC, 19-ago) — las cuatro fotos
+// eran de MVS Music Center, otra empresa, presentadas como si fueran suyas. La
+// URL de origen va debajo de cada foto, pero eso no basta para un documento que
+// a veces se comparte con el propio prospecto.
 export async function buscarFotosBrave(braveKey: string, query: string): Promise<Array<{ titulo: string; url: string; fuente: string }>> {
   try {
     const url = new URL(BRAVE_IMAGES_ENDPOINT);
     url.searchParams.set('q', query);
-    url.searchParams.set('count', '4');
+    url.searchParams.set('count', '2');
     url.searchParams.set('country', 'mx');
     url.searchParams.set('search_lang', 'es');
 
@@ -235,7 +251,7 @@ export async function buscarFotosBrave(braveKey: string, query: string): Promise
         fuente: res.url ?? '',
       }))
       .filter(f => f.url)
-      .slice(0, 4);
+      .slice(0, 2);
   } catch {
     return [];
   }
