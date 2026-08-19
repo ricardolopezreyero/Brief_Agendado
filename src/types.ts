@@ -6,6 +6,11 @@ export interface Env {
   RESEND_API_KEY: string;
   CALENDAR_ICS_URL: string;
   BRIEF_TO_EMAIL?: string; // opcional, default Ricardo@SuperLeads.mx
+  // Rayos X: cuando un dossier queda listo se le avisa para que arme el
+  // diagnóstico pre-llenado. Opcionales — mientras no existan, avisarARayosX no
+  // hace nada y este Worker sigue funcionando igual.
+  RAYOSX_INGESTA_URL?: string;
+  RAYOSX_INGESTA_SECRET?: string;
 }
 
 export interface EventoICS {

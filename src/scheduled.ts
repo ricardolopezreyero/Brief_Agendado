@@ -7,8 +7,9 @@ import { enviarBrief } from './email';
 import {
   insertLog, eventoExiste, eventoConResearchFallido, insertEventoBase, guardarProspecto, guardarDossier,
   marcarErrorResearch, marcarEnviado, marcarErrorEnvio, eventosParaEnviarHoy,
-  listColaboradoresActivos, eventosManualesDeColaborador,
+  listColaboradoresActivos, eventosManualesDeColaborador, getEvento,
 } from './db';
+import { avisarARayosX } from './rayosx';
 
 const HORIZONTE_DIAS = 60; // ignora eventos a más de 60 días, evita procesar un calendario histórico enorme en el primer poll
 const PALABRA_CLAVE = 'rayos x'; // solo eventos cuyo título contenga esto activan la investigación
@@ -38,6 +39,13 @@ export async function investigarEvento(env: Env, uid: string, summary: string, d
 
   const dossier = await ejecutarResearch(env.DEEPSEEK_API_KEY, env.BRAVE_API_KEY, prospecto);
   await guardarDossier(env.DB, uid, dossier);
+
+  // Rayos X arma el diagnóstico pre-llenado. Va aquí, al terminar el dossier, y
+  // no al enviar el correo: el dossier puede quedar listo semanas antes de la
+  // cita, y así el asesor tiene el borrador para prepararse. Un solo punto que
+  // cubre el poll del calendario, el brief manual y los reintentos.
+  const evento = await getEvento(env.DB, uid);
+  if (evento) await avisarARayosX(env, evento);
 }
 
 // Regenera el dossier usando los datos YA guardados del prospecto (p.ej.
@@ -59,6 +67,16 @@ export async function regenerarConDatosGuardados(env: Env, evento: EventoRecord)
   };
   const dossier = await ejecutarResearch(env.DEEPSEEK_API_KEY, env.BRAVE_API_KEY, prospecto);
   await guardarDossier(env.DB, evento.uid, dossier);
+
+  // PATCH y no POST: el diagnóstico probablemente ya existe y lo que se quiere es
+  // que la corrección llegue. Del otro lado el PATCH SOLO rellena campos vacíos,
+  // así que no pisa lo que el asesor haya capturado en plena llamada; y si ese uid
+  // todavía no tenía diagnóstico, lo crea. Se puede usar siempre.
+  //
+  // Se relee el evento en vez de usar el que llegó: `guardarDossier` acaba de
+  // cambiar `dossier_md`, y el parámetro trae el de antes.
+  const actualizado = await getEvento(env.DB, evento.uid);
+  if (actualizado) await avisarARayosX(env, actualizado, 'PATCH');
 }
 
 // Genera un brief desde texto pegado a mano (página /manual) — para cuando
